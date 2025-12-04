@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google" content="notranslate" />
+    <title>Nexus Manager</title>
+    <!-- Tailwind via CDN is fine for quick styling, but usually recommended via PostCSS in build. 
+         Keeping it here as per original setup for simplicity. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'primary': '#0f2c5e', // Darker Blue (Midnight)
+              'primary-hover': '#0a1e42', // Even darker for hovers
+              'secondary': '#475569', // Slate 600
+              'accent': '#10b981',
+              'danger': '#b91c1c', // Darker Red
+              'background': '#f8fafc', // Slate 50
+              'surface': '#ffffff',   // White (Cards)
+              'text-primary': '#020617', // Slate 950 (Very Dark Text)
+              'text-secondary': '#475569', // Slate 600 (Gray Text)
+            },
+          },
+        },
+      }
+    </script>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "vite": "https://aistudiocdn.com/vite@^7.2.6",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/"
+  }
+}
+</script>
+</head>
+  <body class="bg-background text-text-primary notranslate">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

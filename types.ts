@@ -1,0 +1,186 @@
+// Fix: Import React to resolve "Cannot find namespace 'React'" error.
+import React from 'react';
+
+export type View = 'Dashboard' | 'CRM' | 'Captação' | 'Clientes' | 'Parceiros' | 'Projetos' | 'Sites' | 'SaaS' | 'Financeiro' | 'Usuários' | 'Configuração' | 'Assinatura' | 'Empresas' | 'Gerenciar Assinaturas';
+
+export type Currency = 'BRL' | 'USD' | 'EUR';
+export type ProjectStatus = 'Pendente' | 'Em Andamento' | 'Concluído' | 'Atrasado';
+export type UserRole = 'SuperAdmin' | 'Admin' | 'User';
+export type SubscriptionStatus = 'Ativa' | 'Inativa';
+export type LeadStatus = 'Novo' | 'Contatado' | 'Qualificado' | 'Proposta' | 'Ganho' | 'Perdido';
+
+export interface Client {
+  id: string;
+  companyId: string;
+  name: string;
+  companyName: string;
+  email: string;
+  phone: string;
+  cpf: string;
+  cnpj: string;
+}
+
+export interface Partner {
+  id: string;
+  companyId: string;
+  name: string;
+  role: string;
+  hourlyRate: number;
+  isAvailable: boolean;
+}
+
+export interface Payment {
+    id: string;
+    amount: number;
+    dueDate: string;
+    status: 'Pago' | 'Pendente' | 'Atrasado';
+}
+
+export interface Activity {
+  id: string;
+  date: string;
+  description: string;
+}
+
+interface BaseProject {
+  id: string;
+  companyId: string;
+  name: string;
+  description: string;
+  clientId: string;
+  value: number;
+  downPayment: number;
+  installments: number;
+  currency: Currency;
+  hasRetainer: boolean;
+  retainerValue?: number;
+  assignedPartnerIds: string[];
+  startDate: string;
+  endDate: string;
+  status: ProjectStatus;
+  progress: number;
+  payments: Payment[];
+  activities: Activity[];
+}
+
+export interface Project extends BaseProject {
+  type: 'Project';
+}
+
+export interface Site extends BaseProject {
+  type: 'Site';
+}
+
+export interface SaaSPlan {
+  id: string;
+  name: string;
+  price: number;
+  customerCount: number;
+}
+
+export interface SaaSProduct {
+  id: string;
+  companyId: string;
+  name: string;
+  plans: SaaSPlan[];
+}
+
+export interface User {
+    id: string;
+    companyId: string;
+    name: string;
+    email: string;
+    password?: string; // Should not be sent to client in real app
+    role: UserRole;
+    phone?: string;
+    cpf?: string;
+}
+
+export interface SubscriptionPayment {
+    id: string;
+    date: string;
+    amount: number;
+}
+
+export interface Company {
+    id: string;
+    name: string;
+    cnpj_cpf: string;
+    contactName: string;
+    contactEmail: string;
+    contactPhone: string;
+    subscriptionValue: number;
+    currency: Currency;
+    subscriptionStatus: SubscriptionStatus;
+    subscriptionDueDate: string;
+    paymentHistory: SubscriptionPayment[];
+    savedCard?: {
+        last4: string;
+        expiry: string;
+    };
+}
+
+export interface ChatMessage {
+    id: string;
+    text: string;
+    sender: 'user' | 'lead';
+    timestamp: string;
+}
+
+export interface Lead {
+    id: string;
+    companyId: string;
+    name: string; // Name of the business or contact
+    email?: string;
+    phone: string;
+    address?: string;
+    status: LeadStatus;
+    source: string; // e.g., "Google Maps", "Manual", "Indicação"
+    notes?: string;
+    createdAt: string;
+    messages: ChatMessage[];
+}
+
+export interface WhatsAppConfig {
+    apiUrl: string;
+    apiToken: string;
+    instanceName: string;
+    isConnected: boolean;
+}
+
+export interface DataContextType {
+    currentUser: User | null;
+    activeCompanyName: string;
+    clients: Client[];
+    partners: Partner[];
+    projects: Project[];
+    sites: Site[];
+    saasProducts: SaaSProduct[];
+    users: User[];
+    companies: Company[];
+    leads: Lead[];
+    whatsappConfig: WhatsAppConfig;
+    setWhatsappConfig: (config: WhatsAppConfig) => void;
+    addClient: (client: Omit<Client, 'id' | 'companyId'>) => Promise<void>;
+    addPartner: (partner: Omit<Partner, 'id' | 'isAvailable' | 'companyId'>) => Promise<void>;
+    addProject: (project: Omit<Project, 'id' | 'type' | 'payments' | 'status' | 'progress' | 'activities' | 'companyId'>) => Promise<void>;
+    addSite: (site: Omit<Site, 'id' | 'type' | 'payments' | 'status' | 'progress' | 'activities' | 'companyId'>) => Promise<void>;
+    addSaaSProduct: (product: Omit<SaaSProduct, 'id'| 'companyId'>) => Promise<void>;
+    addCompany: (companyData: Omit<Company, 'id' | 'subscriptionDueDate' | 'paymentHistory'> & { adminUser: { name: string; email: string; phone: string } }) => Promise<void>;
+    addUser: (user: Omit<User, 'id' | 'companyId' | 'password'>) => Promise<void>;
+    addLead: (lead: Omit<Lead, 'id' | 'companyId' | 'createdAt' | 'messages'> & { messages?: ChatMessage[] }) => Promise<void>;
+    updateClient: (client: Client) => Promise<void>;
+    updatePartner: (partner: Partner) => Promise<void>;
+    updateProject: (project: Project) => Promise<void>;
+    updateSite: (site: Site) => Promise<void>;
+    updateSaaSProduct: (product: SaaSProduct) => Promise<void>;
+    updateCompany: (company: Company) => Promise<void>;
+    updateUser: (user: User) => Promise<void>;
+    updateLead: (lead: Lead) => Promise<void>;
+    updatePaymentStatus: (projectId: string, paymentId: string, newStatus: 'Pago' | 'Pendente' | 'Atrasado') => Promise<void>;
+    paySubscription: (companyId: string, cardDetails?: { last4: string; expiry: string; }) => Promise<void>;
+    recordSubscriptionPayment: (companyId: string) => Promise<void>;
+    openModal: (title: string, content: React.ReactNode) => void;
+    setActiveView: (view: View) => void;
+    sendWhatsAppMessage: (phone: string, message: string) => Promise<boolean>;
+}
