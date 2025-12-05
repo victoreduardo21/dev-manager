@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 
 interface LoginProps {
   onLogin: (email: string, pass: string) => Promise<boolean>;
-  onRegister: (userData: { companyName: string; name: string; email: string; phone: string; cpf: string; password: string }) => Promise<void>;
+  onRegister: (userData: any) => Promise<void>;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
@@ -24,6 +24,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -34,10 +35,13 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
     try {
         const success = await onLogin(email, password);
         if (!success) {
-            setError('Credenciais inválidas. Verifique seu email e senha.');
+            // Se onLogin retornar false sem lançar erro (caso raro no novo api.ts, mas possível)
+            setError('Email ou senha incorretos.');
         }
-    } catch (e) {
-        setError('Erro de conexão. Tente novamente.');
+    } catch (e: any) {
+        console.error(e);
+        // Exibe a mensagem de erro vinda do Google Apps Script
+        setError(e.message || 'Erro ao conectar com o servidor.');
     } finally {
         setIsLoading(false);
     }
@@ -52,141 +56,137 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
         return;
     }
 
-    if (!companyName.trim()) {
-        setError('O nome da empresa é obrigatório.');
-        return;
-    }
-
     setIsLoading(true);
     try {
+        // Envia para o App.tsx -> api.ts
         await onRegister({
             companyName: companyName,
-            name: `${firstName} ${lastName}`,
+            firstName: firstName,
+            lastName: lastName,
             email: regEmail,
             phone: regPhone,
             cpf: regCpf,
             password: regPassword
         });
-        // Assuming onRegister handles login or redirects
-    } catch (e) {
+        
+        setSuccess('Cadastro realizado com sucesso! Seus dados foram salvos.');
+        setIsLoginView(true);
+        // Preenche o login automaticamente para facilitar
+        setEmail(regEmail);
+        setPassword('');
+        
+        // Limpa form de registro
+        setFirstName(''); setLastName(''); setRegEmail(''); setRegPhone(''); 
+        setRegCpf(''); setRegPassword(''); setConfirmPassword(''); setCompanyName('');
+
+    } catch (e: any) {
         console.error(e);
-        setError('Erro ao criar conta. Tente novamente.');
+        setError('Falha no cadastro: ' + (e.message || 'Tente novamente.'));
     } finally {
         setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen">
-      {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 relative overflow-hidden items-center justify-center p-12 shadow-2xl z-10">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
+    <div className="flex min-h-screen bg-slate-50">
+      {/* Lado Esquerdo - Branding com Efeito de Raio/Luz */}
+      <div className="hidden lg:flex lg:w-1/2 bg-primary-dark relative overflow-hidden items-center justify-center p-12">
         
+        {/* Fundo Base - Azul Profundo */}
+        <div className="absolute inset-0 bg-[#020617]"></div>
+
+        {/* Efeito de "Raio" / Luz Superior Esquerda */}
+        <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] bg-blue-600/20 blur-[120px] rounded-full mix-blend-screen pointer-events-none"></div>
+        
+        {/* Efeito de "Raio" / Luz Central (Branco/Azul Claro) */}
+        <div className="absolute top-[10%] left-[10%] w-[40%] h-[40%] bg-white/10 blur-[80px] rounded-full mix-blend-overlay pointer-events-none"></div>
+
+        {/* Efeito de Contraste Inferior Direito */}
+        <div className="absolute bottom-0 right-0 w-[60%] h-[60%] bg-blue-900/10 blur-[100px] rounded-full pointer-events-none"></div>
+
         <div className="relative z-10 max-w-lg">
-            <h1 className="text-5xl font-extrabold text-white mb-6 leading-tight">
-                Gestão Empresarial <span className="text-blue-500">Simples</span>
+            <h1 className="text-5xl font-extrabold text-white mb-6 leading-tight drop-shadow-lg">
+                Gestão Empresarial <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-white">Simples</span>
             </h1>
-            <p className="text-xl text-slate-400 mb-8 leading-relaxed">
+            <p className="text-xl text-blue-100/80 mb-8 leading-relaxed">
                 Controle total de projetos, finanças e equipe em um único lugar. 
                 Otimize seu fluxo de trabalho sem complicações.
             </p>
-            
             <div className="flex gap-4">
-                <div className="bg-white/5 backdrop-blur-md p-4 rounded-lg border border-white/10">
+                <div className="bg-white/5 backdrop-blur-md p-4 rounded-lg border border-white/10 shadow-xl">
                     <p className="font-bold text-2xl text-white">100%</p>
-                    <p className="text-sm text-slate-300">Controle</p>
+                    <p className="text-sm text-blue-200">Controle</p>
                 </div>
-                <div className="bg-white/5 backdrop-blur-md p-4 rounded-lg border border-white/10">
-                    <p className="font-bold text-2xl text-blue-400">Online</p>
-                    <p className="text-sm text-slate-300">Em tempo real</p>
+                <div className="bg-white/5 backdrop-blur-md p-4 rounded-lg border border-white/10 shadow-xl">
+                    <p className="font-bold text-2xl text-blue-300">Online</p>
+                    <p className="text-sm text-blue-200">Em tempo real</p>
                 </div>
             </div>
         </div>
       </div>
 
-      {/* Right Side - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-slate-50 text-slate-900 overflow-y-auto">
+      {/* Lado Direito - Formulário */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white text-slate-900 overflow-y-auto">
         <div className="w-full max-w-md space-y-8">
             <div className="text-center lg:text-left">
                 <h2 className="text-3xl font-bold tracking-tight text-slate-900">
-                    {isLoginView ? 'Bem-vindo de volta' : 'Crie sua conta'}
+                    {isLoginView ? 'Acesse sua conta' : 'Crie sua conta'}
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
-                    {isLoginView 
-                        ? 'Insira suas credenciais para acessar o painel.' 
-                        : 'Preencha os dados abaixo para começar.'}
+                    {isLoginView ? 'Bem-vindo de volta!' : 'Preencha os dados abaixo para começar.'}
                 </p>
             </div>
 
             {isLoginView ? (
                 /* LOGIN FORM */
                 <form className="mt-8 space-y-6" onSubmit={handleLoginSubmit}>
-                    <div className="space-y-5">
+                    {success && <p className="text-sm text-green-800 text-center font-bold bg-green-100 p-3 rounded-lg border border-green-200">{success}</p>}
+                    {error && <p className="text-sm text-red-800 text-center bg-red-100 p-3 rounded-lg border border-red-200">{error}</p>}
+                    
+                    <div className="space-y-4">
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
-                                Email Corporativo
-                            </label>
-                            <input
-                                id="email"
+                             <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                             <input
                                 type="email"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 focus:border-blue-900 focus:ring-blue-900 sm:text-sm transition-all focus:outline-none focus:ring-2"
-                                placeholder="nome@empresa.com"
+                                className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-4 py-3 focus:border-primary focus:ring-primary outline-none shadow-sm"
+                                placeholder="seu@email.com"
                             />
                         </div>
-                        <div>
-                            <div className="flex items-center justify-between mb-1">
-                                <label htmlFor="password" className="block text-sm font-medium text-slate-700">
-                                    Senha
-                                </label>
-                                <a href="#" className="text-sm font-medium text-blue-800 hover:text-blue-900">
-                                    Esqueceu a senha?
-                                </a>
-                            </div>
+                       <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Senha</label>
                             <input
-                                id="password"
                                 type="password"
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-slate-900 placeholder-slate-400 focus:border-blue-900 focus:ring-blue-900 sm:text-sm transition-all focus:outline-none focus:ring-2"
-                                placeholder="••••••••"
+                                className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-4 py-3 focus:border-primary focus:ring-primary outline-none shadow-sm"
+                                placeholder="Sua senha"
                             />
-                        </div>
+                       </div>
                     </div>
-
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                            <p className="text-sm text-red-600 text-center">{error}</p>
-                        </div>
-                    )}
 
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="group relative flex w-full justify-center rounded-lg bg-blue-950 px-4 py-3 text-sm font-bold text-white hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-all shadow-lg"
+                        className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-bold text-white hover:bg-primary-hover disabled:opacity-50 transition-all shadow-lg shadow-blue-900/20"
                     >
-                        {isLoading ? 'Acessando...' : 'Acessar Painel'}
+                        {isLoading ? 'Conectando...' : 'Entrar'}
                     </button>
                     
                     <div className="text-center mt-4">
-                        <span className="text-sm text-slate-600">Não tem uma conta? </span>
-                        <button 
-                            type="button" 
-                            onClick={() => { setIsLoginView(false); setError(''); }} 
-                            className="text-sm font-bold text-blue-900 hover:underline"
-                        >
-                            Criar Cadastro
+                        <button type="button" onClick={() => setIsLoginView(false)} className="text-sm font-bold text-primary hover:underline">
+                            Não tem conta? Cadastre-se
                         </button>
                     </div>
                 </form>
             ) : (
-                /* REGISTER FORM */
+                /* REGISTER FORM (Campos Exatos) */
                 <form className="mt-8 space-y-4" onSubmit={handleRegisterSubmit}>
-                    
-                    {/* Campo Nome da Empresa */}
+                    {error && <p className="text-sm text-red-800 text-center bg-red-100 p-3 rounded-lg border border-red-200">{error}</p>}
+
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Empresa</label>
                         <input
@@ -194,8 +194,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
                             required
                             value={companyName}
                             onChange={(e) => setCompanyName(e.target.value)}
-                            placeholder="Ex: Minha Agência Ltda"
-                            className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-2 focus:border-blue-900 focus:ring-blue-900 sm:text-sm focus:outline-none focus:ring-2 text-slate-900"
+                            className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-4 py-2 focus:border-primary focus:ring-primary outline-none shadow-sm"
+                            placeholder="Ex: Nexus Tech"
                         />
                     </div>
 
@@ -207,7 +207,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
                                 required
                                 value={firstName}
                                 onChange={(e) => setFirstName(e.target.value)}
-                                className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-2 focus:border-blue-900 focus:ring-blue-900 sm:text-sm focus:outline-none focus:ring-2 text-slate-900"
+                                className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-4 py-2 focus:border-primary focus:ring-primary outline-none shadow-sm"
                             />
                         </div>
                         <div>
@@ -217,7 +217,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
                                 required
                                 value={lastName}
                                 onChange={(e) => setLastName(e.target.value)}
-                                className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-2 focus:border-blue-900 focus:ring-blue-900 sm:text-sm focus:outline-none focus:ring-2 text-slate-900"
+                                className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-4 py-2 focus:border-primary focus:ring-primary outline-none shadow-sm"
                             />
                         </div>
                     </div>
@@ -229,7 +229,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
                             required
                             value={regEmail}
                             onChange={(e) => setRegEmail(e.target.value)}
-                            className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-2 focus:border-blue-900 focus:ring-blue-900 sm:text-sm focus:outline-none focus:ring-2 text-slate-900"
+                            className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-4 py-2 focus:border-primary focus:ring-primary outline-none shadow-sm"
                         />
                     </div>
 
@@ -241,8 +241,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
                                 required
                                 value={regPhone}
                                 onChange={(e) => setRegPhone(e.target.value)}
-                                placeholder="(00) 00000-0000"
-                                className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-2 focus:border-blue-900 focus:ring-blue-900 sm:text-sm focus:outline-none focus:ring-2 text-slate-900"
+                                className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-4 py-2 focus:border-primary focus:ring-primary outline-none shadow-sm"
                             />
                         </div>
                         <div>
@@ -252,8 +251,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
                                 required
                                 value={regCpf}
                                 onChange={(e) => setRegCpf(e.target.value)}
-                                placeholder="000.000.000-00"
-                                className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-2 focus:border-blue-900 focus:ring-blue-900 sm:text-sm focus:outline-none focus:ring-2 text-slate-900"
+                                className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-4 py-2 focus:border-primary focus:ring-primary outline-none shadow-sm"
                             />
                         </div>
                     </div>
@@ -265,7 +263,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
                             required
                             value={regPassword}
                             onChange={(e) => setRegPassword(e.target.value)}
-                            className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-2 focus:border-blue-900 focus:ring-blue-900 sm:text-sm focus:outline-none focus:ring-2 text-slate-900"
+                            className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-4 py-2 focus:border-primary focus:ring-primary outline-none shadow-sm"
                         />
                     </div>
                     
@@ -276,44 +274,29 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
                             required
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-2 focus:border-blue-900 focus:ring-blue-900 sm:text-sm focus:outline-none focus:ring-2 text-slate-900"
+                            className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-4 py-2 focus:border-primary focus:ring-primary outline-none shadow-sm"
                         />
                     </div>
-
-                    {error && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                            <p className="text-sm text-red-600 text-center">{error}</p>
-                        </div>
-                    )}
 
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="group relative flex w-full justify-center rounded-lg bg-blue-950 px-4 py-3 text-sm font-bold text-white hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-all shadow-lg"
+                        className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-bold text-white hover:bg-primary-hover disabled:opacity-50 transition-all shadow-lg shadow-blue-900/20"
                     >
-                        {isLoading ? 'Criando Conta...' : 'Cadastrar e Entrar'}
+                        {isLoading ? 'Salvando...' : 'Cadastrar'}
                     </button>
 
                     <div className="text-center mt-4">
-                        <span className="text-sm text-slate-600">Já tem uma conta? </span>
-                        <button 
-                            type="button" 
-                            onClick={() => { setIsLoginView(true); setError(''); }} 
-                            className="text-sm font-bold text-blue-900 hover:underline"
-                        >
-                            Fazer Login
+                        <button type="button" onClick={() => setIsLoginView(true)} className="text-sm font-bold text-primary hover:underline">
+                            Já tem uma conta? Fazer Login
                         </button>
                     </div>
                 </form>
             )}
-
-            <div className="mt-6 text-center">
-                <p className="text-xs text-slate-500">
-                    Protegido por reCAPTCHA e sujeito à Política de Privacidade.
-                </p>
-                <p className="text-xs text-slate-500 mt-2 font-semibold">
-                    © 2025 GTS - Global Tech Software. Todos os direitos reservados.
-                </p>
+            
+            <div className="mt-6 text-center text-xs text-slate-400">
+                <p>Protegido por reCAPTCHA e sujeito à Política de Privacidade.</p>
+                <p className="mt-1">© 2025 GTS - Global Tech Software.</p>
             </div>
         </div>
       </div>

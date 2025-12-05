@@ -44,9 +44,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
     onClose(); // Close sidebar on mobile after navigation
   };
 
-  // Verifica se a URL do backend está configurada (Simula status online)
-  const isOnline = !!process.env.VITE_BACKEND_URL;
-
   // Usa o avatar do usuário ou um placeholder padrão
   const userAvatar = currentUser.avatar || `https://i.pravatar.cc/100?u=${currentUser.email}`;
 
@@ -58,42 +55,37 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
         onClick={onClose}
       ></div>
 
-      <nav className={`w-64 h-full bg-slate-900 border-r border-white/10 flex flex-col text-white
+      <nav className={`w-64 h-full bg-primary-dark border-r border-white/10 flex flex-col text-white
         fixed lg:static inset-y-0 left-0 z-40
-        transition-transform duration-300 ease-in-out shadow-2xl
+        transition-transform duration-300 ease-in-out shadow-2xl relative overflow-hidden
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="p-6 border-b border-white/10 bg-slate-950/50 flex justify-center items-center h-20">
-          <h1 className="text-xl font-bold text-white tracking-wide">Nexus <span className="text-blue-500">Manager</span></h1>
+         {/* Efeito de Luz Sutil no Topo */}
+         <div className="absolute top-0 left-0 w-full h-32 bg-blue-600/10 blur-[50px] pointer-events-none"></div>
+
+        <div className="p-6 border-b border-white/10 bg-black/10 flex justify-center items-center h-20 relative z-10">
+          <h1 className="text-xl font-bold text-white tracking-wide">Nexus <span className="text-blue-400">Manager</span></h1>
         </div>
 
-        <ul className="flex-1 p-3 overflow-y-auto space-y-1">
+        <ul className="flex-1 p-3 overflow-y-auto space-y-1 custom-scrollbar relative z-10">
           {navItems.map((item) => (
             <li key={item.name}>
               <button
                 onClick={() => handleLinkClick(item.name)}
                 className={`w-full flex items-center p-3 rounded-lg text-left transition-all duration-200 font-medium ${
                   activeView === item.name
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50'
+                    ? 'bg-white text-primary-dark shadow-lg'
                     : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
-                <span className={`w-5 h-5 mr-3 ${activeView === item.name ? 'text-white' : 'text-slate-500 group-hover:text-white'}`}>{item.icon}</span>
+                <span className={`w-5 h-5 mr-3 ${activeView === item.name ? 'text-primary-dark' : 'text-slate-500 group-hover:text-white'}`}>{item.icon}</span>
                 {item.name}
               </button>
             </li>
           ))}
         </ul>
-        <div className="p-4 border-t border-white/10 bg-slate-950/30 space-y-4">
+        <div className="p-4 border-t border-white/10 bg-black/20 space-y-4 relative z-10">
           
-          {/* Status Indicator */}
-          <div className="flex items-center justify-center space-x-2 bg-black/40 p-2 rounded text-xs border border-white/5">
-            <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500 shadow-[0_0_5px_#22c55e]' : 'bg-gray-500'}`}></div>
-            <span className="text-slate-300 font-medium">
-                {isOnline ? 'Banco de Dados: Online' : 'Modo Offline (Local)'}
-            </span>
-          </div>
-
           <div className="flex items-center">
               <img src={userAvatar} alt="User Avatar" className="w-10 h-10 rounded-full border border-white/20 object-cover" />
               <div className="ml-3 overflow-hidden">
@@ -103,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
           </div>
           <button
             onClick={onLogout}
-            className="w-full flex items-center justify-center p-2 rounded-lg text-left transition-colors duration-200 bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/10"
+            className="w-full flex items-center justify-center p-2 rounded-lg text-left transition-colors duration-200 bg-red-500/10 text-red-200 hover:bg-red-500/20 border border-red-500/10"
           >
             <LogoutIcon />
             <span className="ml-2 text-sm font-medium">Sair do Sistema</span>

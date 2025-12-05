@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -51,11 +52,9 @@ const App: React.FC = () => {
   };
 
   const handleRegister = async (userData: { companyName: string; name: string; email: string; phone: string; cpf: string; password: string }): Promise<void> => {
-      // Chama o backend simulado para criar empresa e usuário
-      const { user } = await api.register(userData, userData.companyName);
-      
-      setCurrentUser(user);
-      localStorage.setItem('nexus_current_user', JSON.stringify(user));
+      // Chama o backend para criar empresa e usuário
+      // Nota: Não fazemos setCurrentUser aqui para forçar o usuário a fazer login após o cadastro
+      await api.register(userData, userData.companyName);
   };
 
   const handleLogout = () => {
@@ -117,7 +116,7 @@ const App: React.FC = () => {
             onClose={() => setIsSidebarOpen(false)}
         />
         <div className="flex-1 flex flex-col overflow-hidden">
-            <header className="lg:hidden bg-slate-900 border-b border-white/10 flex items-center justify-between p-4 sticky top-0 z-20 shadow-md">
+            <header className="lg:hidden bg-primary-dark border-b border-white/10 flex items-center justify-between p-4 sticky top-0 z-20 shadow-md">
                 <button onClick={() => setIsSidebarOpen(true)} className="text-white">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -135,7 +134,7 @@ const App: React.FC = () => {
                     </button>
                 </div>
             )}
-            <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-5">
+            <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-50">
                 <ErrorBoundary key={activeView}>
                     {renderView()}
                 </ErrorBoundary>
