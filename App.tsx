@@ -1,64 +1,68 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Clients from './components/Clients';
 import Partners from './components/Partners';
-import ProjectManager from './components/ProjectManager'; // Using the new unified component
+import ProjectManager from './components/ProjectManager';
 import SaaS from './components/SaaS';
 import Financials from './components/Financials';
 import Users from './components/Users';
 import Settings from './components/Settings';
 import Login from './components/Login';
-import Subscription from './components/Subscription';
 import ErrorBoundary from './components/ErrorBoundary';
 import CRM from './components/CRM';
 import LeadGen from './components/LeadGen';
 import Companies from './components/Companies';
+import Subscription from './components/Subscription';
 import AdminSubscriptionManager from './components/AdminSubscriptionManager';
 import { DataProvider } from './context/DataContext';
 import type { View, User, Company } from './types';
-import { mockUsers } from './data/mockData';
+import { api } from './services/api';
 
 const App: React.FC = () => {
   const [activeView, setActiveView] = useState<View>('Dashboard');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [impersonatedCompany, setImpersonatedCompany] = useState<Company | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [localUsers, setLocalUsers] = useState<User[]>(mockUsers);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Tentar restaurar sessão
+  useEffect(() => {
+    const storedUser = localStorage.getItem('nexus_current_user');
+    if (storedUser) {
+        setCurrentUser(JSON.parse(storedUser));
+    }
+    setIsLoading(false);
+  }, []);
 
   const handleLogin = async (email: string, pass: string): Promise<boolean> => {
-    // Check against localUsers which includes both mock and newly registered
-    const user = localUsers.find(u => u.email === email && u.password === pass);
-    if (user) {
-      setCurrentUser(user);
-      return true;
+    try {
+        const user = await api.login(email, pass);
+        if (user) {
+            setCurrentUser(user);
+            localStorage.setItem('nexus_current_user', JSON.stringify(user));
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error(error);
+        return false;
     }
-    return false;
   };
 
-  const handleRegister = async (userData: { name: string; email: string; phone: string; cpf: string; password: string }): Promise<void> => {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      const newUser: User = {
-          id: `user-${Date.now()}`,
-          companyId: `comp-self-${Date.now()}`, // Auto-create a company ID for the new user
-          name: userData.name,
-          email: userData.email,
-          password: userData.password,
-          role: 'Admin', // Default role for new signups
-          phone: userData.phone,
-          cpf: userData.cpf
-      };
-
-      setLocalUsers(prev => [...prev, newUser]);
-      setCurrentUser(newUser);
+  const handleRegister = async (userData: { companyName: string; name: string; email: string; phone: string; cpf: string; password: string }): Promise<void> => {
+      // Chama o backend simulado para criar empresa e usuário
+      const { user } = await api.register(userData, userData.companyName);
+      
+      setCurrentUser(user);
+      localStorage.setItem('nexus_current_user', JSON.stringify(user));
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
     setImpersonatedCompany(null);
     setActiveView('Dashboard');
+    localStorage.removeItem('nexus_current_user');
   };
 
   const handleImpersonate = (company: Company) => {
@@ -82,14 +86,16 @@ const App: React.FC = () => {
       case 'Sites': return <ProjectManager projectType="Site" />;
       case 'SaaS': return <SaaS />;
       case 'Financeiro': return <Financials />;
-      case 'Assinatura': return <Subscription />;
       case 'Empresas': return <Companies onImpersonate={handleImpersonate} />;
-      case 'Gerenciar Assinaturas': return <AdminSubscriptionManager />;
       case 'Usuários': return <Users />;
       case 'Configuração': return <Settings />;
+      case 'Assinatura': return <Subscription />;
+      case 'Gerenciar Assinaturas': return <AdminSubscriptionManager />;
       default: return <Dashboard />;
     }
   };
+
+  if (isLoading) return <div className="h-screen flex items-center justify-center bg-slate-900 text-white">Carregando...</div>;
 
   if (!currentUser) {
     return <Login onLogin={handleLogin} onRegister={handleRegister} />;
@@ -129,7 +135,7 @@ const App: React.FC = () => {
                     </button>
                 </div>
             )}
-            <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-50">
+            <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-5">
                 <ErrorBoundary key={activeView}>
                     {renderView()}
                 </ErrorBoundary>

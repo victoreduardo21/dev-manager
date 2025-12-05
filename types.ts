@@ -1,7 +1,8 @@
+
 // Fix: Import React to resolve "Cannot find namespace 'React'" error.
 import React from 'react';
 
-export type View = 'Dashboard' | 'CRM' | 'Captação' | 'Clientes' | 'Parceiros' | 'Projetos' | 'Sites' | 'SaaS' | 'Financeiro' | 'Usuários' | 'Configuração' | 'Assinatura' | 'Empresas' | 'Gerenciar Assinaturas';
+export type View = 'Dashboard' | 'CRM' | 'Captação' | 'Clientes' | 'Parceiros' | 'Projetos' | 'Sites' | 'SaaS' | 'Financeiro' | 'Empresas' | 'Usuários' | 'Configuração' | 'Assinatura' | 'Gerenciar Assinaturas';
 
 export type Currency = 'BRL' | 'USD' | 'EUR';
 export type ProjectStatus = 'Pendente' | 'Em Andamento' | 'Concluído' | 'Atrasado';
@@ -94,6 +95,7 @@ export interface User {
     role: UserRole;
     phone?: string;
     cpf?: string;
+    avatar?: string; // Base64 string for user avatar
 }
 
 export interface SubscriptionPayment {

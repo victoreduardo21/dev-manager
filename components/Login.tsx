@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 
 interface LoginProps {
   onLogin: (email: string, pass: string) => Promise<boolean>;
-  onRegister: (userData: { name: string; email: string; phone: string; cpf: string; password: string }) => Promise<void>;
+  onRegister: (userData: { companyName: string; name: string; email: string; phone: string; cpf: string; password: string }) => Promise<void>;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
@@ -14,6 +14,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
   const [password, setPassword] = useState('');
   
   // Register State
+  const [companyName, setCompanyName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [regEmail, setRegEmail] = useState('');
@@ -51,19 +52,24 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
         return;
     }
 
+    if (!companyName.trim()) {
+        setError('O nome da empresa é obrigatório.');
+        return;
+    }
+
     setIsLoading(true);
     try {
         await onRegister({
+            companyName: companyName,
             name: `${firstName} ${lastName}`,
             email: regEmail,
             phone: regPhone,
             cpf: regCpf,
             password: regPassword
         });
-        // Assuming onRegister handles login or redirects, otherwise:
-        // setIsLoginView(true);
-        // setError('Cadastro realizado! Faça login.');
+        // Assuming onRegister handles login or redirects
     } catch (e) {
+        console.error(e);
         setError('Erro ao criar conta. Tente novamente.');
     } finally {
         setIsLoading(false);
@@ -72,7 +78,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left Side - Branding (Updated Gradient: Very Dark Blue) */}
+      {/* Left Side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 relative overflow-hidden items-center justify-center p-12 shadow-2xl z-10">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
         
@@ -132,7 +138,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
                         </div>
                         <div>
                             <div className="flex items-center justify-between mb-1">
-                                <label htmlFor="password" class="block text-sm font-medium text-slate-700">
+                                <label htmlFor="password" className="block text-sm font-medium text-slate-700">
                                     Senha
                                 </label>
                                 <a href="#" className="text-sm font-medium text-blue-800 hover:text-blue-900">
@@ -179,6 +185,20 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
             ) : (
                 /* REGISTER FORM */
                 <form className="mt-8 space-y-4" onSubmit={handleRegisterSubmit}>
+                    
+                    {/* Campo Nome da Empresa */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Nome da Empresa</label>
+                        <input
+                            type="text"
+                            required
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                            placeholder="Ex: Minha Agência Ltda"
+                            className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-2 focus:border-blue-900 focus:ring-blue-900 sm:text-sm focus:outline-none focus:ring-2 text-slate-900"
+                        />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Nome</label>

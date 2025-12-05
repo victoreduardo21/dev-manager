@@ -19,35 +19,8 @@ const DashboardCard: React.FC<{ title: string; value: string | number; subtext?:
     </div>
 );
 
-const SubscriptionAlert: React.FC = () => {
-    const { currentUser, companies, setActiveView } = useData();
-    if (currentUser?.role === 'SuperAdmin') return null;
-
-    const myCompany = companies.find(c => c.id === currentUser?.companyId);
-    if (!myCompany) return null;
-
-    const isOverdue = new Date(myCompany.subscriptionDueDate) < new Date() && myCompany.subscriptionStatus === 'Ativa';
-
-    if (!isOverdue) return null;
-
-    return (
-        <div className="bg-red-500/20 border border-danger p-4 rounded-lg mb-6 flex items-center justify-between">
-            <div>
-                <h4 className="font-bold text-danger">Assinatura Vencida</h4>
-                <p className="text-text-secondary text-sm">Sua assinatura venceu em {new Date(myCompany.subscriptionDueDate).toLocaleDateString('pt-BR')}. Por favor, regularize para não perder o acesso.</p>
-            </div>
-            <button
-                onClick={() => setActiveView('Assinatura')}
-                className="bg-danger text-white px-4 py-2 rounded-lg shadow-md hover:bg-danger/90 transition-colors"
-            >
-                Pagar Agora
-            </button>
-        </div>
-    )
-}
-
 const Dashboard: React.FC = () => {
-    const { projects, sites, clients, partners, saasProducts, setActiveView } = useData();
+    const { projects, sites, clients, partners, saasProducts } = useData();
     
     const allProjects = [...projects, ...sites];
     const projectsInProgress = allProjects.filter(p => p.status === 'Em Andamento').length;
@@ -80,8 +53,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <div>
-        <SubscriptionAlert />
-        
         <h2 className="text-3xl font-bold mb-6 text-text-primary">Dashboard</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
             <DashboardCard title="Total de Clientes" value={clients.length} icon={<UsersIcon />} />

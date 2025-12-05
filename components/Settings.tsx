@@ -27,7 +27,8 @@ const Settings: React.FC = () => {
         name: currentUser?.name || '',
         email: currentUser?.email || '',
         phone: currentUser?.phone || '',
-        cpf: currentUser?.cpf || ''
+        cpf: currentUser?.cpf || '',
+        avatar: currentUser?.avatar || ''
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -40,6 +41,19 @@ const Settings: React.FC = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                if (typeof reader.result === 'string') {
+                    setFormData(prev => ({ ...prev, avatar: reader.result as string }));
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSave = async () => {
         setIsSaving(true);
         setSuccessMsg('');
@@ -50,7 +64,8 @@ const Settings: React.FC = () => {
                 name: formData.name,
                 email: formData.email,
                 phone: formData.phone,
-                cpf: formData.cpf
+                cpf: formData.cpf,
+                avatar: formData.avatar
             });
             setSuccessMsg('Dados atualizados com sucesso!');
         } catch (error) {
@@ -60,6 +75,8 @@ const Settings: React.FC = () => {
         }
     };
 
+    const userAvatar = formData.avatar || `https://i.pravatar.cc/100?u=${currentUser.email}`;
+
   return (
     <div>
       <h2 className="text-3xl font-bold text-text-primary mb-6">Configurações</h2>
@@ -68,13 +85,22 @@ const Settings: React.FC = () => {
           
           {/* Profile Header */}
           <div className="flex items-center mb-8">
-            <img src={`https://i.pravatar.cc/80?u=${currentUser.email}`} alt="User Avatar" className="w-20 h-20 rounded-full border-2 border-primary/50" />
+            <div className="relative group">
+                <img src={userAvatar} alt="User Avatar" className="w-20 h-20 rounded-full border-2 border-primary/50 object-cover" />
+                <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-xs opacity-0 group-hover:opacity-100 rounded-full cursor-pointer transition-opacity">
+                    Alterar
+                    <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                </label>
+            </div>
             <div className="ml-6">
                 <h3 className="text-2xl font-bold text-text-primary">{currentUser.name}</h3>
                 <p className="text-text-secondary">{currentUser.email}</p>
                 <div className="flex items-center gap-2 mt-2">
                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-primary/20 text-primary uppercase">{currentUser.role}</span>
-                     <button className="text-sm text-primary hover:underline">Alterar foto</button>
+                     <label className="text-sm text-primary hover:underline cursor-pointer">
+                        Alterar foto
+                        <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                     </label>
                 </div>
             </div>
           </div>
