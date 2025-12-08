@@ -1,6 +1,7 @@
 
 import React from 'react';
 import type { View, User } from '../types';
+import { useData } from '../context/DataContext';
 import { 
   HomeIcon, UsersIcon, BriefcaseIcon, FolderIcon, GlobeAltIcon, 
   CloudIcon, CurrencyDollarIcon, CreditCardIcon, BuildingOfficeIcon, 
@@ -8,7 +9,7 @@ import {
 } from './Icons';
 
 interface SidebarProps {
-  currentUser: User;
+  currentUser: User; // Mantido para compatibilidade, mas o interno terá prioridade
   activeView: View;
   setActiveView: (view: View) => void;
   onLogout: () => void;
@@ -16,7 +17,11 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveView, onLogout, isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentUser: propUser, activeView, setActiveView, onLogout, isOpen, onClose }) => {
+  // Hook para pegar dados em tempo real. Se o contexto tiver o usuário (após update), usamos ele.
+  const { currentUser: contextUser } = useData();
+  const currentUser = contextUser || propUser;
+
   const allNavItems: { name: View; icon: React.ReactElement; adminOnly?: boolean; superAdminHidden?: boolean }[] = [
     { name: 'Dashboard', icon: <HomeIcon /> },
     { name: 'CRM', icon: <FunnelIcon /> },
@@ -44,8 +49,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
     onClose(); // Close sidebar on mobile after navigation
   };
 
-  // Usa o avatar do usuário ou um placeholder padrão
-  const userAvatar = currentUser.avatar || `https://i.pravatar.cc/100?u=${currentUser.email}`;
+  // Helper para obter iniciais
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  };
 
   return (
     <>
@@ -87,7 +99,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
         <div className="p-4 border-t border-white/10 bg-black/20 space-y-4 relative z-10">
           
           <div className="flex items-center">
-              <img src={userAvatar} alt="User Avatar" className="w-10 h-10 rounded-full border border-white/20 object-cover" />
+              <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center border border-white/20 text-white font-bold text-sm shadow-lg">
+                {getInitials(currentUser.name)}
+              </div>
               <div className="ml-3 overflow-hidden">
                   <p className="font-semibold text-white truncate">{currentUser.name}</p>
                   <p className="text-xs text-slate-400 truncate">{currentUser.email}</p>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -12,10 +11,10 @@ import Settings from './components/Settings';
 import Login from './components/Login';
 import ErrorBoundary from './components/ErrorBoundary';
 import CRM from './components/CRM';
-import LeadGen from './components/LeadGen';
 import Companies from './components/Companies';
 import Subscription from './components/Subscription';
 import AdminSubscriptionManager from './components/AdminSubscriptionManager';
+import LeadGen from './components/LeadGen';
 import { DataProvider } from './context/DataContext';
 import type { View, User, Company } from './types';
 import { api } from './services/api';

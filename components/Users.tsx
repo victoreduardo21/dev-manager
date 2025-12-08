@@ -76,22 +76,38 @@ const UserForm: React.FC<{
     );
 };
 
-const UserCard: React.FC<{ user: User; onEdit: (user: User) => void; }> = ({ user, onEdit }) => (
-  <div className="bg-surface rounded-lg shadow-lg border border-white/10 p-5">
-    <div className="flex justify-between items-start">
-        <div>
-            <h3 className="text-lg font-bold text-text-primary">{user.name}</h3>
-            <p className="text-sm text-text-secondary">{user.email}</p>
+const UserCard: React.FC<{ user: User; onEdit: (user: User) => void; }> = ({ user, onEdit }) => {
+    const getInitials = (name: string) => {
+        return name
+          .split(' ')
+          .map((n) => n[0])
+          .slice(0, 2)
+          .join('')
+          .toUpperCase();
+    };
+
+    return (
+      <div className="bg-surface rounded-lg shadow-lg border border-white/10 p-5">
+        <div className="flex items-center gap-4">
+             <div className="w-12 h-12 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-lg border border-white/10">
+                {getInitials(user.name)}
+             </div>
+             <div className="flex-1 overflow-hidden">
+                <div className="flex justify-between items-start">
+                    <h3 className="text-lg font-bold text-text-primary truncate">{user.name}</h3>
+                    <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${user.role === 'Admin' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-gray-500/20 text-gray-300'}`}>
+                        {user.role === 'Admin' ? 'Admin' : 'Membro'}
+                    </span>
+                </div>
+                <p className="text-sm text-text-secondary truncate">{user.email}</p>
+             </div>
         </div>
-        <span className={`px-3 py-1 text-xs font-semibold rounded-full ${user.role === 'Admin' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-gray-500/20 text-gray-300'}`}>
-            {user.role === 'Admin' ? 'Admin' : 'Membro'}
-        </span>
-    </div>
-     <div className="mt-4 pt-4 border-t border-white/10 text-right">
-        <button onClick={() => onEdit(user)} className="text-sm font-medium text-primary hover:underline">Editar</button>
-    </div>
-  </div>
-);
+         <div className="mt-4 pt-4 border-t border-white/10 text-right">
+            <button onClick={() => onEdit(user)} className="text-sm font-medium text-primary hover:underline">Editar</button>
+        </div>
+      </div>
+    );
+};
 
 const Users: React.FC = () => {
   const { users, addUser, updateUser, openModal, activeCompanyName } = useData();

@@ -2,8 +2,9 @@
 import { mockUsers, mockCompanies, mockClients, mockProjects, mockPartners, mockSites, mockSaaSProducts } from '../data/mockData';
 import type { User } from '../types';
 
-// URL do Google Apps Script Web App definida no arquivo .env
-const API_URL = process.env.VITE_BACKEND_URL;
+// URL do Google Apps Script Web App (Backend)
+// Substituída diretamente para garantir conexão
+const API_URL = "https://script.google.com/macros/s/AKfycbyGEPpqT9EZGcq0TUACUA71YnNkS-e4AAi0-QA7QsxgfHGUuRq_3rRGzYyCxS_swyh_/exec";
 
 /**
  * Função helper para enviar requisições ao Google Apps Script
@@ -11,7 +12,7 @@ const API_URL = process.env.VITE_BACKEND_URL;
  */
 const request = async (action: string, payload: any = {}) => {
     if (!API_URL) {
-        throw new Error("VITE_BACKEND_URL não configurada no arquivo .env");
+        throw new Error("URL da API não configurada.");
     }
 
     try {
@@ -40,22 +41,20 @@ export const api = {
     
     login: async (email: string, pass: string): Promise<User | null> => {
         // Envia ação 'login' para o script.
-        // O script deve procurar o email na aba 'Users' e verificar a senha.
         const result = await request('login', { email, password: pass });
         return result.user || null;
     },
 
     register: async (userData: any, companyName: string): Promise<any> => {
-        // Prepara o payload conforme esperado pelo seu script 'handleRegisterUser'
-        // Combina Nome e Sobrenome pois a planilha tem coluna 'name'
+        // Prepara o payload conforme esperado pelo seu script
         const payload = {
-            companyId: companyName, // Usando o nome da empresa como identificador inicial
+            companyId: companyName, 
             name: `${userData.firstName} ${userData.lastName}`.trim(),
             email: userData.email,
             password: userData.password,
             phone: userData.phone,
             cpf: userData.cpf,
-            role: 'User' // Padrão
+            role: 'User'
         };
         
         return await request('registerUser', payload);
@@ -64,9 +63,7 @@ export const api = {
     // --- Dados do Dashboard ---
 
     fetchData: async () => {
-        // Como o backend atual é focado apenas em Auth, retornamos 
-        // dados locais/vazios para o restante do sistema funcionar visualmente.
-        // Futuramente, você pode criar uma ação 'sync' no GAS.
+        // Retorna dados mocados para o dashboard visual enquanto o backend foca em Auth
         return {
             users: mockUsers || [],
             companies: mockCompanies || [],
@@ -79,14 +76,12 @@ export const api = {
         };
     },
 
-    // Métodos Genéricos (Placeholder para futura implementação no GAS)
+    // Métodos Genéricos (Placeholder)
     saveItem: async (collection: string, item: any) => {
         console.log(`Salvando em ${collection} (Local):`, item);
-        // Exemplo futuro: await request('saveItem', { sheet: collection, item });
     },
 
     updateItem: async (collection: string, item: any) => {
         console.log(`Atualizando em ${collection} (Local):`, item);
-        // Exemplo futuro: await request('updateItem', { sheet: collection, item });
     }
 };

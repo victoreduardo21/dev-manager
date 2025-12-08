@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 
 const ToggleSwitch: React.FC<{ enabled: boolean, setEnabled: (enabled: boolean) => void }> = ({ enabled, setEnabled }) => (
@@ -24,34 +24,32 @@ const Settings: React.FC = () => {
     
     // State for user profile fields
     const [formData, setFormData] = useState({
-        name: currentUser?.name || '',
-        email: currentUser?.email || '',
-        phone: currentUser?.phone || '',
-        cpf: currentUser?.cpf || '',
-        avatar: currentUser?.avatar || ''
+        name: '',
+        email: '',
+        phone: '',
+        cpf: ''
     });
 
     const [isSaving, setIsSaving] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
     
+    // Atualiza o form data quando o currentUser muda (ex: após salvar)
+    useEffect(() => {
+        if (currentUser) {
+            setFormData({
+                name: currentUser.name || '',
+                email: currentUser.email || '',
+                phone: currentUser.phone || '',
+                cpf: currentUser.cpf || ''
+            });
+        }
+    }, [currentUser]);
+
     if (!currentUser) return null;
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                if (typeof reader.result === 'string') {
-                    setFormData(prev => ({ ...prev, avatar: reader.result as string }));
-                }
-            };
-            reader.readAsDataURL(file);
-        }
     };
 
     const handleSave = async () => {
@@ -64,18 +62,25 @@ const Settings: React.FC = () => {
                 name: formData.name,
                 email: formData.email,
                 phone: formData.phone,
-                cpf: formData.cpf,
-                avatar: formData.avatar
+                cpf: formData.cpf
             });
             setSuccessMsg('Dados atualizados com sucesso!');
         } catch (error) {
             console.error("Failed to update user", error);
+            setSuccessMsg('Erro ao atualizar. Tente novamente.');
         } finally {
             setIsSaving(false);
         }
     };
 
-    const userAvatar = formData.avatar || `https://i.pravatar.cc/100?u=${currentUser.email}`;
+    const getInitials = (name: string) => {
+        return name
+          .split(' ')
+          .map((n) => n[0])
+          .slice(0, 2)
+          .join('')
+          .toUpperCase();
+    };
 
   return (
     <div>
@@ -86,21 +91,15 @@ const Settings: React.FC = () => {
           {/* Profile Header */}
           <div className="flex items-center mb-8">
             <div className="relative group">
-                <img src={userAvatar} alt="User Avatar" className="w-20 h-20 rounded-full border-2 border-primary/50 object-cover" />
-                <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white text-xs opacity-0 group-hover:opacity-100 rounded-full cursor-pointer transition-opacity">
-                    Alterar
-                    <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-                </label>
+                <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center border-2 border-primary/50 text-white font-bold text-3xl shadow-xl">
+                    {getInitials(formData.name || currentUser.name)}
+                </div>
             </div>
             <div className="ml-6">
-                <h3 className="text-2xl font-bold text-text-primary">{currentUser.name}</h3>
-                <p className="text-text-secondary">{currentUser.email}</p>
+                <h3 className="text-2xl font-bold text-text-primary">{formData.name || currentUser.name}</h3>
+                <p className="text-text-secondary">{formData.email || currentUser.email}</p>
                 <div className="flex items-center gap-2 mt-2">
                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-primary/20 text-primary uppercase">{currentUser.role}</span>
-                     <label className="text-sm text-primary hover:underline cursor-pointer">
-                        Alterar foto
-                        <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
-                     </label>
                 </div>
             </div>
           </div>
@@ -176,7 +175,7 @@ const Settings: React.FC = () => {
             <hr className="border-white/10 my-8"/>
             
             <div className="flex items-center justify-between pt-4">
-              {successMsg && <span className="text-green-500 text-sm font-medium animate-pulse">{successMsg}</span>}
+              {successMsg && <span className={`text-sm font-medium animate-pulse ${successMsg.includes('Erro') ? 'text-red-500' : 'text-green-500'}`}>{successMsg}</span>}
               {!successMsg && <span></span>} {/* Spacer */}
               <button 
                 type="button" 

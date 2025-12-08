@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { MapPinIcon, CheckBadgeIcon, PaperAirplaneIcon } from './Icons';
@@ -40,27 +41,29 @@ const LeadGen: React.FC = () => {
 
         setIsSearching(true);
         setResults([]);
-        setStatusMessage('Iniciando busca inteligente...');
+        setStatusMessage('Iniciando busca ampliada...');
         
         try {
-            // Estratégia: Pedir 3 variações para aumentar a chance de sucesso
+            // Estratégia AUMENTADA: 5 variações para buscar até 100 leads (5 x 20)
             const variations = [
-                `Businesses: "${keyword}" in "${location}"`,
-                `Top rated "${keyword}" near "${location}"`,
-                `Companies for "${keyword}" in "${location}"`
+                `List 20 popular businesses for: "${keyword}" in "${location}"`,
+                `List 20 top rated "${keyword}" near "${location}"`,
+                `List 20 affordable or small "${keyword}" in "${location}"`,
+                `List 20 established "${keyword}" companies in "${location}" area`,
+                `List 20 different "${keyword}" services located in "${location}"`
             ];
 
             let accumulatedLeads: ScrapedLead[] = [];
             const uniquePhones = new Set();
 
-            // Fazemos um loop limitado para não estourar cota
-            for (let i = 0; i < 2; i++) { 
-                setStatusMessage(`Varredura ${i + 1}/2 em andamento...`);
+            // Loop por todas as variações (5 ciclos)
+            for (let i = 0; i < variations.length; i++) { 
+                setStatusMessage(`Varredura profunda ${i + 1}/${variations.length} em andamento...`);
                 
-                // PROMPT FORÇA BRUTA (Texto Plano com Separador Pipe |)
+                // PROMPT AJUSTADO PARA 20 RESULTADOS POR VEZ
                 const prompt = `
                     Act as a data scraper. I need real business leads for: ${variations[i]}.
-                    List 10 results.
+                    List exactly 20 results per batch if possible.
                     
                     Format: NAME | PHONE (with DDI) | ADDRESS
                     
@@ -72,6 +75,7 @@ const LeadGen: React.FC = () => {
                     1. NO Markdown. NO Tables. NO numbering.
                     2. PHONE IS MANDATORY. Skip if no phone.
                     3. If country is Brazil, add +55. If USA, add +1.
+                    4. Try not to repeat common big chains, look for local businesses.
                 `;
 
                 try {
@@ -90,7 +94,8 @@ const LeadGen: React.FC = () => {
                                 // Limpa telefone para verificar duplicidade
                                 const cleanPhone = phone.replace(/[^0-9]/g, '');
 
-                                if (cleanPhone.length > 6 && !uniquePhones.has(cleanPhone)) {
+                                // Validação básica de tamanho de telefone e duplicidade
+                                if (cleanPhone.length > 8 && !uniquePhones.has(cleanPhone)) {
                                     uniquePhones.add(cleanPhone);
                                     accumulatedLeads.push({
                                         id: `lead-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -104,25 +109,26 @@ const LeadGen: React.FC = () => {
                         }
                     }
                     
-                    // Atualiza resultados parciais
+                    // Atualiza resultados parciais na tela para o usuário ver chegando
                     setResults([...accumulatedLeads]);
-                    // Pequena pausa para a API respirar
-                    await new Promise(r => setTimeout(r, 1000)); 
+                    
+                    // Pausa estratégica para evitar Rate Limit da API do Google
+                    await new Promise(r => setTimeout(r, 1500)); 
 
                 } catch (err: any) {
-                    console.warn("Erro parcial:", err);
+                    console.warn(`Erro na varredura ${i}:`, err);
                 }
             }
             
             if (accumulatedLeads.length === 0) {
-                setStatusMessage('Nenhum resultado encontrado. Tente outra região.');
+                setStatusMessage('Nenhum resultado encontrado. Tente outra região ou termo.');
             } else {
-                setStatusMessage(`Busca concluída! ${accumulatedLeads.length} leads encontrados.`);
+                setStatusMessage(`Busca concluída! ${accumulatedLeads.length} leads únicos encontrados.`);
             }
 
         } catch (error) {
             console.error("Critical Search Error:", error);
-            setStatusMessage('Erro ao conectar com o Google.');
+            setStatusMessage('Erro ao conectar com o Google AI.');
         } finally {
             setIsSearching(false);
         }
@@ -270,14 +276,23 @@ const LeadGen: React.FC = () => {
                 <div className="flex-1 flex flex-col bg-surface rounded-lg border border-white/10 overflow-hidden">
                     <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/20">
                         <h3 className="font-bold text-text-primary">Resultados Encontrados ({results.length})</h3>
-                        <button 
-                            onClick={() => setAutomationStatus('configuring')}
-                            disabled={selectedCount === 0}
-                            className="bg-green-600 text-white px-6 py-2 rounded-md text-sm hover:bg-green-700 disabled:opacity-50 shadow-lg font-medium flex items-center gap-2"
-                        >
-                            <PaperAirplaneIcon className="w-4 h-4" />
-                            Importar para CRM ({selectedCount})
-                        </button>
+                        <div className="flex gap-3">
+                            {/* Botão de Selecionar Todos */}
+                            <button 
+                                onClick={() => setResults(prev => prev.map(r => ({ ...r, selected: true })))}
+                                className="text-xs text-text-secondary hover:text-primary underline"
+                            >
+                                Selecionar Todos
+                            </button>
+                            <button 
+                                onClick={() => setAutomationStatus('configuring')}
+                                disabled={selectedCount === 0}
+                                className="bg-green-600 text-white px-6 py-2 rounded-md text-sm hover:bg-green-700 disabled:opacity-50 shadow-lg font-medium flex items-center gap-2"
+                            >
+                                <PaperAirplaneIcon className="w-4 h-4" />
+                                Importar para CRM ({selectedCount})
+                            </button>
+                        </div>
                     </div>
                     
                     <div className="flex-1 overflow-y-auto p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 content-start custom-scrollbar">

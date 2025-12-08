@@ -95,7 +95,6 @@ export interface User {
     role: UserRole;
     phone?: string;
     cpf?: string;
-    avatar?: string; // Base64 string for user avatar
 }
 
 export interface SubscriptionPayment {
