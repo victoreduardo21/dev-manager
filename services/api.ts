@@ -1,14 +1,25 @@
 
-import { mockUsers, mockCompanies, mockClients, mockProjects, mockPartners, mockSites, mockSaaSProducts } from '../data/mockData';
 import type { User } from '../types';
 
 // URL do Google Apps Script Web App (Backend)
-// Substituída diretamente para garantir conexão
+// Certifique-se de que esta URL está atualizada com a versão mais recente do seu Deploy
 const API_URL = "https://script.google.com/macros/s/AKfycbyGEPpqT9EZGcq0TUACUA71YnNkS-e4AAi0-QA7QsxgfHGUuRq_3rRGzYyCxS_swyh_/exec";
+
+// Mapeamento entre nomes das coleções no Frontend e nomes das Abas no Google Sheets
+const COLLECTION_MAP: Record<string, string> = {
+    users: 'Users',
+    companies: 'Companies',
+    clients: 'Clients',
+    projects: 'Projects',
+    sites: 'Sites',
+    partners: 'Partners',
+    saasProducts: 'SaaSProducts',
+    leads: 'Leads'
+};
 
 /**
  * Função helper para enviar requisições ao Google Apps Script
- * O GAS geralmente exige POST com Content-Type text/plain para evitar problemas de CORS em preflight
+ * O GAS exige POST com Content-Type text/plain para evitar problemas de CORS
  */
 const request = async (action: string, payload: any = {}) => {
     if (!API_URL) {
@@ -18,7 +29,6 @@ const request = async (action: string, payload: any = {}) => {
     try {
         const response = await fetch(API_URL, {
             method: 'POST',
-            // 'text/plain' evita o preflight OPTIONS do CORS que o Google Apps Script não trata nativamente
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ action, ...payload })
         });
@@ -37,16 +47,14 @@ const request = async (action: string, payload: any = {}) => {
 };
 
 export const api = {
-    // --- Autenticação via Planilha (GAS) ---
+    // --- Autenticação ---
     
     login: async (email: string, pass: string): Promise<User | null> => {
-        // Envia ação 'login' para o script.
         const result = await request('login', { email, password: pass });
         return result.user || null;
     },
 
     register: async (userData: any, companyName: string): Promise<any> => {
-        // Prepara o payload conforme esperado pelo seu script
         const payload = {
             companyId: companyName, 
             name: `${userData.firstName} ${userData.lastName}`.trim(),
@@ -56,32 +64,44 @@ export const api = {
             cpf: userData.cpf,
             role: 'User'
         };
-        
         return await request('registerUser', payload);
     },
 
-    // --- Dados do Dashboard ---
+    // --- Dados Globais ---
 
     fetchData: async () => {
-        // Retorna dados mocados para o dashboard visual enquanto o backend foca em Auth
-        return {
-            users: mockUsers || [],
-            companies: mockCompanies || [],
-            clients: mockClients || [],
-            projects: mockProjects || [],
-            sites: mockSites || [],
-            partners: mockPartners || [],
-            saasProducts: mockSaaSProducts || [],
-            leads: []
-        };
+        try {
+            // Busca todos os dados de todas as abas de uma vez
+            const data = await request('fetchData');
+            
+            // Retorna os dados formatados. Se alguma aba estiver vazia, retorna array vazio.
+            return {
+                users: data.users || [],
+                companies: data.companies || [],
+                clients: data.clients || [],
+                projects: data.projects || [],
+                sites: data.sites || [],
+                partners: data.partners || [],
+                saasProducts: data.saasProducts || [],
+                leads: data.leads || []
+            };
+        } catch (error) {
+            console.error("Falha ao buscar dados:", error);
+            return null;
+        }
     },
 
-    // Métodos Genéricos (Placeholder)
+    // --- Operações de Escrita (CRUD) ---
+
     saveItem: async (collection: string, item: any) => {
-        console.log(`Salvando em ${collection} (Local):`, item);
+        const sheetName = COLLECTION_MAP[collection] || collection;
+        // Envia para o backend salvar na aba correta
+        await request('saveItem', { collection: sheetName, item });
     },
 
     updateItem: async (collection: string, item: any) => {
-        console.log(`Atualizando em ${collection} (Local):`, item);
+        const sheetName = COLLECTION_MAP[collection] || collection;
+        // Envia para o backend atualizar na aba correta (baseado no ID)
+        await request('updateItem', { collection: sheetName, item });
     }
 };
