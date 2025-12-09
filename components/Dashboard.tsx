@@ -1,6 +1,6 @@
 
+
 import React from 'react';
-import type { Project, Site } from '../types';
 import { CURRENCY_SYMBOLS } from '../constants';
 import { useData } from '../context/DataContext';
 import { UsersIcon, FolderIcon, BriefcaseIcon, CurrencyDollarIcon, CheckBadgeIcon } from './Icons';
@@ -20,21 +20,27 @@ const DashboardCard: React.FC<{ title: string; value: string | number; subtext?:
 );
 
 const Dashboard: React.FC = () => {
-    const { projects, sites, clients, partners, saasProducts } = useData();
+    const { projects, clients, partners, saasProducts } = useData();
     
-    const allProjects = [...projects, ...sites];
+    // projects now contains both Sites and Projects
+    const allProjects = projects;
+    
     const projectsInProgress = allProjects.filter(p => p.status === 'Em Andamento').length;
     const completedProjects = allProjects.filter(p => p.status === 'Concluído').length;
     const availablePartners = partners.filter(p => p.isAvailable).length;
     
-    const monthlyRecurringRevenue = allProjects.reduce((acc, p) => {
-        if (p.hasRetainer && p.retainerValue) {
-            return acc + p.retainerValue;
-        }
-        return acc;
-    }, 0) + saasProducts.reduce((acc, s) => {
-        return acc + s.plans.reduce((planAcc, plan) => planAcc + (plan.price * plan.customerCount), 0);
-    }, 0);
+    // Fix: Ensure correct summation of float numbers
+    const monthlyRecurringRevenue = Number((
+        allProjects.reduce((acc, p) => {
+            if (p.hasRetainer && p.retainerValue) {
+                return acc + Number(p.retainerValue);
+            }
+            return acc;
+        }, 0) + 
+        saasProducts.reduce((acc, s) => {
+            return acc + s.plans.reduce((planAcc, plan) => planAcc + (plan.price * plan.customerCount), 0);
+        }, 0)
+    ).toFixed(2));
 
     const formatCurrency = (value: number) => {
         return `${CURRENCY_SYMBOLS.BRL} ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

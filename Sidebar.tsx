@@ -24,7 +24,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
     { name: 'Clientes', icon: <UsersIcon /> },
     { name: 'Parceiros', icon: <BriefcaseIcon /> },
     { name: 'Projetos', icon: <FolderIcon /> },
-    { name: 'Sites', icon: <GlobeAltIcon /> },
     { name: 'SaaS', icon: <CloudIcon /> },
     { name: 'Financeiro', icon: <CurrencyDollarIcon /> },
     { name: 'Assinatura', icon: <CreditCardIcon />, superAdminHidden: true },

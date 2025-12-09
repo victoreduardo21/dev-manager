@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -81,8 +82,8 @@ const App: React.FC = () => {
       case 'Captação': return <LeadGen />;
       case 'Clientes': return <Clients />;
       case 'Parceiros': return <Partners />;
-      case 'Projetos': return <ProjectManager projectType="Project" />;
-      case 'Sites': return <ProjectManager projectType="Site" />;
+      case 'Projetos': return <ProjectManager />;
+      // Case 'Sites' removed
       case 'SaaS': return <SaaS />;
       case 'Financeiro': return <Financials />;
       case 'Empresas': return <Companies onImpersonate={handleImpersonate} />;

@@ -1,4 +1,5 @@
 
+
 import type { User } from '../types';
 
 // URL do Google Apps Script Web App (Backend)
@@ -103,5 +104,11 @@ export const api = {
         const sheetName = COLLECTION_MAP[collection] || collection;
         // Envia para o backend atualizar na aba correta (baseado no ID)
         await request('updateItem', { collection: sheetName, item });
+    },
+
+    deleteItem: async (collection: string, id: string) => {
+        const sheetName = COLLECTION_MAP[collection] || collection;
+        // Envia para o backend excluir
+        await request('deleteItem', { collection: sheetName, id });
     }
 };

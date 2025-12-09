@@ -1,11 +1,13 @@
 
+
 // Fix: Import React to resolve "Cannot find namespace 'React'" error.
 import React from 'react';
 
-export type View = 'Dashboard' | 'CRM' | 'Captação' | 'Clientes' | 'Parceiros' | 'Projetos' | 'Sites' | 'SaaS' | 'Financeiro' | 'Empresas' | 'Usuários' | 'Configuração' | 'Assinatura' | 'Gerenciar Assinaturas';
+export type View = 'Dashboard' | 'CRM' | 'Captação' | 'Clientes' | 'Parceiros' | 'Projetos' | 'SaaS' | 'Financeiro' | 'Empresas' | 'Usuários' | 'Configuração' | 'Assinatura' | 'Gerenciar Assinaturas';
 
 export type Currency = 'BRL' | 'USD' | 'EUR';
 export type ProjectStatus = 'Pendente' | 'Em Andamento' | 'Concluído' | 'Atrasado';
+export type ProjectCategory = 'Site' | 'Sistema' | 'App' | 'Marketing' | 'Consultoria' | 'Outro';
 export type UserRole = 'SuperAdmin' | 'Admin' | 'User';
 export type SubscriptionStatus = 'Ativa' | 'Inativa';
 export type LeadStatus = 'Novo' | 'Contatado' | 'Qualificado' | 'Proposta' | 'Ganho' | 'Perdido';
@@ -43,11 +45,12 @@ export interface Activity {
   description: string;
 }
 
-interface BaseProject {
+export interface Project {
   id: string;
   companyId: string;
   name: string;
   description: string;
+  category: ProjectCategory; // Novo campo para diferenciar Site de Sistema, etc.
   clientId: string;
   value: number;
   downPayment: number;
@@ -64,13 +67,7 @@ interface BaseProject {
   activities: Activity[];
 }
 
-export interface Project extends BaseProject {
-  type: 'Project';
-}
-
-export interface Site extends BaseProject {
-  type: 'Site';
-}
+// Site type removed as it is merged into Project
 
 export interface SaaSPlan {
   id: string;
@@ -155,7 +152,7 @@ export interface DataContextType {
     clients: Client[];
     partners: Partner[];
     projects: Project[];
-    sites: Site[];
+    // sites removed
     saasProducts: SaaSProduct[];
     users: User[];
     companies: Company[];
@@ -164,8 +161,8 @@ export interface DataContextType {
     setWhatsappConfig: (config: WhatsAppConfig) => void;
     addClient: (client: Omit<Client, 'id' | 'companyId'>) => Promise<void>;
     addPartner: (partner: Omit<Partner, 'id' | 'isAvailable' | 'companyId'>) => Promise<void>;
-    addProject: (project: Omit<Project, 'id' | 'type' | 'payments' | 'status' | 'progress' | 'activities' | 'companyId'>) => Promise<void>;
-    addSite: (site: Omit<Site, 'id' | 'type' | 'payments' | 'status' | 'progress' | 'activities' | 'companyId'>) => Promise<void>;
+    addProject: (project: Omit<Project, 'id' | 'payments' | 'status' | 'progress' | 'activities' | 'companyId'>) => Promise<void>;
+    // addSite removed
     addSaaSProduct: (product: Omit<SaaSProduct, 'id'| 'companyId'>) => Promise<void>;
     addCompany: (companyData: Omit<Company, 'id' | 'subscriptionDueDate' | 'paymentHistory'> & { adminUser: { name: string; email: string; phone: string } }) => Promise<void>;
     addUser: (user: Omit<User, 'id' | 'companyId' | 'password'>) => Promise<void>;
@@ -173,11 +170,18 @@ export interface DataContextType {
     updateClient: (client: Client) => Promise<void>;
     updatePartner: (partner: Partner) => Promise<void>;
     updateProject: (project: Project) => Promise<void>;
-    updateSite: (site: Site) => Promise<void>;
+    // updateSite removed
     updateSaaSProduct: (product: SaaSProduct) => Promise<void>;
     updateCompany: (company: Company) => Promise<void>;
     updateUser: (user: User) => Promise<void>;
     updateLead: (lead: Lead) => Promise<void>;
+    deleteClient: (id: string) => Promise<void>;
+    deletePartner: (id: string) => Promise<void>;
+    deleteProject: (id: string) => Promise<void>;
+    // deleteSite removed
+    deleteSaaSProduct: (id: string) => Promise<void>;
+    deleteUser: (id: string) => Promise<void>;
+    deleteLead: (id: string) => Promise<void>;
     updatePaymentStatus: (projectId: string, paymentId: string, newStatus: 'Pago' | 'Pendente' | 'Atrasado') => Promise<void>;
     paySubscription: (companyId: string, cardDetails?: { last4: string; expiry: string; }) => Promise<void>;
     recordSubscriptionPayment: (companyId: string) => Promise<void>;

@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import type { Project, Site, Client, Partner, Currency, ProjectStatus, Activity } from '../types';
+import type { Project, Currency, ProjectStatus, Activity, ProjectCategory } from '../types';
 import { CURRENCY_SYMBOLS, CURRENCIES, PROJECT_STATUSES } from '../constants';
 import { useData } from '../context/DataContext';
+import { TrashIcon } from './Icons';
 
-type ProjectLike = Project | Site;
+const PROJECT_CATEGORIES: ProjectCategory[] = ['Site', 'Sistema', 'App', 'Marketing', 'Consultoria', 'Outro'];
 
-const ProjectLikeForm: React.FC<{ 
-    projectType: 'Project' | 'Site';
-    onSave: (project: Omit<ProjectLike, 'id' | 'type' | 'payments' | 'activities'> | ProjectLike) => Promise<void>;
-    initialData?: ProjectLike;
-}> = ({ onSave, initialData, projectType }) => {
+const ProjectForm: React.FC<{ 
+    onSave: (project: Omit<Project, 'id' | 'payments' | 'activities'> | Project) => Promise<void>;
+    initialData?: Project;
+}> = ({ onSave, initialData }) => {
     const { clients, partners } = useData();
     const [formData, setFormData] = useState({
         name: '',
         description: '',
+        category: 'Sistema' as ProjectCategory,
         clientId: '',
         value: '',
         downPayment: '',
@@ -31,8 +32,6 @@ const ProjectLikeForm: React.FC<{
     const [error, setError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     
-    const singularTitle = projectType === 'Project' ? 'Projeto' : 'Site';
-
     useEffect(() => {
         if(initialData) {
             setFormData({
@@ -90,7 +89,7 @@ const ProjectLikeForm: React.FC<{
                      description: newActivity.trim(),
                  });
              }
-             const projectPayload: ProjectLike = { ...(initialData as ProjectLike), ...dataToSave, activities: updatedActivities };
+             const projectPayload: Project = { ...initialData, ...dataToSave, activities: updatedActivities };
              await onSave(projectPayload);
         } else {
              await onSave(dataToSave as any);
@@ -100,12 +99,25 @@ const ProjectLikeForm: React.FC<{
     return (
         <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <input type="text" name="name" placeholder={`Nome do ${singularTitle}`} value={formData.name} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary" />
+            
+            <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2">
+                    <input type="text" name="name" placeholder="Nome do Projeto / Site" value={formData.name} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary" />
+                </div>
+                <div>
+                     <select name="category" value={formData.category} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary">
+                        {PROJECT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                </div>
+            </div>
+
             <textarea name="description" placeholder="Descrição" value={formData.description} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary" />
+            
             <select name="clientId" value={formData.clientId} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary">
                 <option value="">Selecione um Cliente</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
+            
             <div className="grid grid-cols-2 gap-4">
                 <input type="number" name="value" placeholder="Valor Total" value={formData.value} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md" />
                 <input type="number" name="downPayment" placeholder="Valor da Entrada" value={formData.downPayment} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md" />
@@ -117,8 +129,8 @@ const ProjectLikeForm: React.FC<{
                 </select>
             </div>
             <div className="flex items-center gap-4">
-                <input type="checkbox" name="hasRetainer" id={`hasRetainer-${projectType}`} checked={formData.hasRetainer} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
-                <label htmlFor={`hasRetainer-${projectType}`} className="text-sm">Tem mensalidade?</label>
+                <input type="checkbox" name="hasRetainer" id="hasRetainer" checked={formData.hasRetainer} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                <label htmlFor="hasRetainer" className="text-sm">Tem mensalidade?</label>
                 {formData.hasRetainer && <input type="number" name="retainerValue" placeholder="Valor Mensalidade" value={formData.retainerValue} onChange={handleChange} className="flex-1 px-3 py-2 bg-background/50 border border-white/20 rounded-md" />}
             </div>
              <div className="grid grid-cols-2 gap-4">
@@ -163,8 +175,8 @@ const ProjectLikeForm: React.FC<{
                 <div className="max-h-32 overflow-y-auto bg-background/50 p-2 border border-white/20 rounded-md mt-1">
                     {partners.map(p => (
                         <div key={p.id} className="flex items-center gap-2">
-                            <input type="checkbox" id={`partner-${projectType}-${p.id}`} checked={formData.assignedPartnerIds.includes(p.id)} onChange={() => handlePartnerChange(p.id)} />
-                            <label htmlFor={`partner-${projectType}-${p.id}`}>{p.name} ({p.role})</label>
+                            <input type="checkbox" id={`partner-${p.id}`} checked={formData.assignedPartnerIds.includes(p.id)} onChange={() => handlePartnerChange(p.id)} />
+                            <label htmlFor={`partner-${p.id}`}>{p.name} ({p.role})</label>
                         </div>
                     ))}
                 </div>
@@ -175,7 +187,7 @@ const ProjectLikeForm: React.FC<{
                   disabled={isSaving}
                   className="bg-primary text-white px-6 py-2 rounded-lg shadow-md hover:bg-primary/90 transition-colors disabled:bg-primary/50 disabled:cursor-not-allowed"
                 >
-                  {isSaving ? 'Salvando...' : (initialData ? `Atualizar ${singularTitle}` : `Salvar ${singularTitle}`)}
+                  {isSaving ? 'Salvando...' : (initialData ? `Atualizar` : `Salvar`)}
                 </button>
             </div>
         </form>
@@ -183,29 +195,52 @@ const ProjectLikeForm: React.FC<{
 };
 
 
-const ProjectLikeCard: React.FC<{
-    project: ProjectLike; 
+const ProjectCard: React.FC<{
+    project: Project; 
     clientName: string; 
-    onEdit: (project: ProjectLike) => void;
-    onViewHistory: (project: ProjectLike) => void;
-}> = ({ project, clientName, onEdit, onViewHistory }) => {
+    onEdit: (project: Project) => void;
+    onViewHistory: (project: Project) => void;
+    onDelete: (id: string) => void;
+}> = ({ project, clientName, onEdit, onViewHistory, onDelete }) => {
     const latestActivity = project.activities && project.activities.length > 0 ? project.activities[project.activities.length - 1] : null;
 
+    const handleDelete = () => {
+        if (confirm(`Tem certeza que deseja excluir "${project.name}"?`)) {
+            onDelete(project.id);
+        }
+    };
+
+    const categoryColor = project.category === 'Site' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+
     return (
-    <div className="bg-surface p-5 rounded-lg shadow-lg border border-white/10 flex flex-col h-full">
+    <div className="bg-surface p-5 rounded-lg shadow-lg border border-white/10 flex flex-col h-full relative group transition-all hover:border-white/20">
         <div>
             <div className="flex justify-between items-start">
                 <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${categoryColor}`}>
+                            {project.category || 'Geral'}
+                        </span>
+                    </div>
                     <h3 className="text-lg font-bold text-text-primary">{project.name}</h3>
                     <p className="text-sm text-primary font-medium">{clientName}</p>
                 </div>
-                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                    project.status === 'Em Andamento' ? 'bg-blue-500/20 text-blue-400' : 
-                    project.status === 'Concluído' ? 'bg-green-500/20 text-green-400' : 
-                    project.status === 'Pendente' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'
-                }`}>
-                    {project.status}
-                </span>
+                <div className="flex items-center gap-2">
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                        project.status === 'Em Andamento' ? 'bg-blue-500/20 text-blue-400' : 
+                        project.status === 'Concluído' ? 'bg-green-500/20 text-green-400' : 
+                        project.status === 'Pendente' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'
+                    }`}>
+                        {project.status}
+                    </span>
+                    <button 
+                        onClick={handleDelete}
+                        className="p-1.5 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/30 transition-colors"
+                        title="Excluir"
+                    >
+                        <TrashIcon className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
             <p className="text-sm text-text-secondary my-3 h-10 overflow-hidden">{project.description}</p>
         </div>
@@ -263,55 +298,54 @@ const ActivityHistory: React.FC<{ activities: Activity[] }> = ({ activities }) =
 };
 
 
-const ProjectManager: React.FC<{ projectType: 'Project' | 'Site' }> = ({ projectType }) => {
+const ProjectManager: React.FC = () => {
   const { 
-    projects, sites, clients, 
-    addProject, updateProject, 
-    addSite, updateSite, 
+    projects, clients, 
+    addProject, updateProject, deleteProject,
     openModal 
   } = useData();
   
-  const isProjects = projectType === 'Project';
-  const data = isProjects ? projects : sites;
-  const addData = isProjects ? addProject : addSite;
-  const updateData = isProjects ? updateProject : updateSite;
-  const title = isProjects ? 'Projetos' : 'Sites';
-  const singularTitle = isProjects ? 'Projeto' : 'Site';
-    
   const getClientName = (clientId: string) => {
     return clients.find(c => c.id === clientId)?.name || 'Cliente não encontrado';
   }
   
   const handleAddClick = () => {
-      openModal(`Adicionar Novo ${singularTitle}`, <ProjectLikeForm projectType={projectType} onSave={addData as any} />);
+      openModal(`Adicionar Novo Projeto`, <ProjectForm onSave={addProject} />);
   };
 
-  const handleEditClick = (project: ProjectLike) => {
-      openModal(`Editar ${singularTitle}`, <ProjectLikeForm projectType={projectType} onSave={updateData as any} initialData={project} />);
+  const handleEditClick = (project: Project) => {
+      openModal(`Editar Projeto: ${project.name}`, <ProjectForm onSave={updateProject} initialData={project} />);
   };
   
-  const handleViewHistoryClick = (project: ProjectLike) => {
+  const handleViewHistoryClick = (project: Project) => {
       openModal(`Histórico de Andamento: ${project.name}`, <ActivityHistory activities={project.activities} />);
   };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold text-text-primary">{title}</h2>
+        <h2 className="text-3xl font-bold text-text-primary">Projetos & Sites</h2>
         <button onClick={handleAddClick} className="bg-primary text-white px-4 py-2 rounded-lg shadow-md hover:bg-primary/90 transition-colors">
-          Adicionar {singularTitle}
+          Novo Projeto/Site
         </button>
       </div>
-       {data.length > 0 ? (
+       {projects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {data.map((item) => (
-                    <ProjectLikeCard key={item.id} project={item} clientName={getClientName(item.clientId)} onEdit={handleEditClick} onViewHistory={handleViewHistoryClick} />
+                {projects.map((item) => (
+                    <ProjectCard 
+                        key={item.id} 
+                        project={item} 
+                        clientName={getClientName(item.clientId)} 
+                        onEdit={handleEditClick} 
+                        onViewHistory={handleViewHistoryClick} 
+                        onDelete={deleteProject}
+                    />
                 ))}
             </div>
          ) : (
             <div className="text-center py-10 bg-surface rounded-lg border border-dashed border-white/20">
-                <p className="text-text-secondary">Nenhum {title.toLowerCase()} cadastrado ainda.</p>
-                <p className="text-sm text-text-secondary/80 mt-1">Clique em "Adicionar {singularTitle}" para começar.</p>
+                <p className="text-text-secondary">Nenhum projeto ou site cadastrado ainda.</p>
+                <p className="text-sm text-text-secondary/80 mt-1">Clique no botão acima para começar.</p>
             </div>
       )}
     </div>

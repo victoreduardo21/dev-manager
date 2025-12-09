@@ -1,7 +1,8 @@
 
+
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import Modal from '../components/Modal';
-import type { Client, Partner, Project, Site, SaaSProduct, User, Company, Payment, DataContextType, View, SubscriptionPayment, Lead, ChatMessage, WhatsAppConfig } from '../types';
+import type { Client, Partner, Project, SaaSProduct, User, Company, Payment, DataContextType, View, SubscriptionPayment, Lead, ChatMessage, WhatsAppConfig } from '../types';
 import { api } from '../services/api';
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -42,7 +43,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const [clients, setClients] = useState<Client[]>([]);
     const [partners, setPartners] = useState<Partner[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
-    const [sites, setSites] = useState<Site[]>([]);
+    // const [sites, setSites] = useState<Site[]>([]); // Removed: merged into projects
     const [saasProducts, setSaaSProducts] = useState<SaaSProduct[]>([]);
     const [leads, setLeads] = useState<Lead[]>([]);
     
@@ -69,8 +70,21 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
                     setCompanies(db.companies || []);
                     setClients(db.clients || []);
                     setPartners(db.partners || []);
-                    setProjects(db.projects || []);
-                    setSites(db.sites || []);
+                    
+                    // MERGE STRATEGY: Combine 'Projects' and 'Sites' from DB into a single 'projects' state
+                    // Ensure old 'Sites' have category='Site'
+                    const mappedProjects = (db.projects || []).map((p: any) => ({
+                        ...p,
+                        category: p.category || 'Sistema' // Default to Sistema if undefined
+                    }));
+
+                    const mappedSites = (db.sites || []).map((s: any) => ({
+                        ...s,
+                        category: 'Site' // Explicitly set as Site
+                    }));
+
+                    setProjects([...mappedProjects, ...mappedSites]);
+                    
                     setSaaSProducts(db.saasProducts || []);
                     setLeads(db.leads || []);
                 }
@@ -130,25 +144,43 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const filteredClients = useMemo(() => filterByCompany(clients), [clients, currentUser, impersonatedCompany]);
     const filteredPartners = useMemo(() => filterByCompany(partners), [partners, currentUser, impersonatedCompany]);
     const filteredProjects = useMemo(() => filterByCompany(projects), [projects, currentUser, impersonatedCompany]);
-    const filteredSites = useMemo(() => filterByCompany(sites), [sites, currentUser, impersonatedCompany]);
     const filteredSaaSProducts = useMemo(() => filterByCompany(saasProducts), [saasProducts, currentUser, impersonatedCompany]);
     const filteredUsers = useMemo(() => filterByCompany(users), [users, currentUser, impersonatedCompany]);
     const filteredLeads = useMemo(() => filterByCompany(leads), [leads, currentUser, impersonatedCompany]);
     
-    const generatePayments = (totalValue: number, installments: number, startDate: string): Payment[] => {
-        if (installments <= 0) return [];
-        const installmentAmount = totalValue / installments;
-        const start = new Date(startDate);
-        return Array.from({ length: installments }, (_, i) => {
-            const dueDate = new Date(start);
-            dueDate.setMonth(start.getMonth() + i + 1);
-            return {
-                id: `payment_${Date.now()}_${i + 1}`,
-                amount: parseFloat(installmentAmount.toFixed(2)),
-                dueDate: dueDate.toISOString().split('T')[0],
-                status: 'Pendente'
-            };
-        });
+    // Função aprimorada para gerar cronograma de pagamentos (Inclui Entrada e Parcelas)
+    const generatePaymentSchedule = (totalValue: number, downPayment: number, installments: number, startDate: string): Payment[] => {
+        const payments: Payment[] = [];
+        const remainingValue = totalValue - downPayment;
+
+        // 1. Entrada (Down Payment)
+        if (downPayment > 0) {
+            payments.push({
+                id: `pay_entry_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+                amount: downPayment,
+                dueDate: startDate, // Vence na data de início
+                status: 'Pendente' // Assumimos pendente para controle
+            });
+        }
+
+        // 2. Parcelas
+        if (installments > 0 && remainingValue > 0) {
+            const installmentAmount = remainingValue / installments;
+            const start = new Date(startDate);
+            
+            for (let i = 0; i < installments; i++) {
+                const dueDate = new Date(start);
+                dueDate.setMonth(start.getMonth() + i + 1); // 1º parcela no mês seguinte
+                payments.push({
+                    id: `pay_inst_${Date.now()}_${i + 1}_${Math.random().toString(36).substr(2, 5)}`,
+                    amount: parseFloat(installmentAmount.toFixed(2)),
+                    dueDate: dueDate.toISOString().split('T')[0],
+                    status: 'Pendente'
+                });
+            }
+        }
+        
+        return payments;
     };
 
     // --- Create Handlers (Agora Persistentes) ---
@@ -190,42 +222,25 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         openModal('Empresa Criada com Sucesso!', <PasswordDisplay user={newUser} />);
     };
 
-    const addProject = async (data: Omit<Project, 'id' | 'type' | 'payments' | 'status' | 'progress' | 'activities' | 'companyId'>) => {
+    const addProject = async (data: Omit<Project, 'id' | 'payments' | 'status' | 'progress' | 'activities' | 'companyId'>) => {
         if (!activeCompanyId) return;
-        const remainingValue = data.value - data.downPayment;
+        
+        const payments = generatePaymentSchedule(data.value, data.downPayment || 0, data.installments, data.startDate);
+
         const newItem: Project = { 
             ...data, 
             id: `proj${Date.now()}`,
             companyId: activeCompanyId,
-            type: 'Project',
             status: 'Pendente',
             progress: 0, 
             activities: [],
-            payments: generatePayments(remainingValue, data.installments, data.startDate)
+            payments: payments
         };
         await api.saveItem('projects', newItem);
         setProjects(prev => [...prev, newItem]);
         closeModal();
     };
 
-    const addSite = async (data: Omit<Site, 'id' | 'type' | 'payments' | 'status' | 'progress' | 'activities' | 'companyId'>) => {
-        if (!activeCompanyId) return;
-        const remainingValue = data.value - data.downPayment;
-        const newItem: Site = { 
-            ...data, 
-            id: `site${Date.now()}`,
-            companyId: activeCompanyId,
-            type: 'Site',
-            status: 'Pendente',
-            progress: 0,
-            activities: [],
-            payments: generatePayments(remainingValue, data.installments, data.startDate)
-        };
-        await api.saveItem('sites', newItem);
-        setSites(prev => [...prev, newItem]);
-        closeModal();
-    };
-    
     const addClient = async (data: Omit<Client, 'id' | 'companyId'>) => {
         if (!activeCompanyId) return;
         const newItem = { ...data, id: `cli${Date.now()}`, companyId: activeCompanyId };
@@ -282,7 +297,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const updateClient = (item: Client) => updateGeneric('clients', item, setClients).then(closeModal);
     const updatePartner = (item: Partner) => updateGeneric('partners', item, setPartners).then(closeModal);
     const updateProject = (item: Project) => updateGeneric('projects', item, setProjects).then(closeModal);
-    const updateSite = (item: Site) => updateGeneric('sites', item, setSites).then(closeModal);
     const updateSaaSProduct = (item: SaaSProduct) => updateGeneric('saasProducts', item, setSaaSProducts).then(closeModal);
     const updateCompany = (item: Company) => updateGeneric('companies', item, setCompanies).then(closeModal);
     const updateUser = (item: User) => updateGeneric('users', item, setUsers).then(() => {
@@ -295,29 +309,31 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     });
     const updateLead = (item: Lead) => updateGeneric('leads', item, setLeads); // Lead não fecha modal auto
 
+    // --- Delete Handlers ---
+    const deleteGeneric = async (collection: string, id: string, setter: React.Dispatch<React.SetStateAction<any[]>>) => {
+        await api.deleteItem(collection, id);
+        setter(prev => prev.filter(i => i.id !== id));
+    };
+
+    const deleteClient = (id: string) => deleteGeneric('clients', id, setClients);
+    const deletePartner = (id: string) => deleteGeneric('partners', id, setPartners);
+    const deleteProject = (id: string) => deleteGeneric('projects', id, setProjects);
+    const deleteSaaSProduct = (id: string) => deleteGeneric('saasProducts', id, setSaaSProducts);
+    const deleteUser = (id: string) => deleteGeneric('users', id, setUsers);
+    const deleteLead = (id: string) => deleteGeneric('leads', id, setLeads);
+
     const updatePaymentStatus = async (projectId: string, paymentId: string, newStatus: 'Pago' | 'Pendente' | 'Atrasado') => {
         // Encontrar e atualizar o projeto correto (seja em projects ou sites)
-        let found: Project | Site | undefined = projects.find(p => p.id === projectId);
-        let collection = 'projects';
+        const found = projects.find(p => p.id === projectId);
         
-        if (!found) {
-            found = sites.find(s => s.id === projectId);
-            collection = 'sites';
-        }
-
         if (found) {
             const updatedProject = {
                 ...found,
                 payments: found.payments.map(pm => pm.id === paymentId ? { ...pm, status: newStatus } : pm)
             };
             
-            await api.updateItem(collection as any, updatedProject);
-            
-            if (collection === 'projects') {
-                setProjects(prev => prev.map(p => p.id === projectId ? updatedProject as Project : p));
-            } else {
-                setSites(prev => prev.map(s => s.id === projectId ? updatedProject as unknown as Site : s));
-            }
+            await api.updateItem('projects', updatedProject);
+            setProjects(prev => prev.map(p => p.id === projectId ? updatedProject : p));
         }
     };
 
@@ -412,9 +428,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const value: DataContextType = {
         currentUser,
         activeCompanyName,
-        clients: filteredClients, partners: filteredPartners, projects: filteredProjects, sites: filteredSites, saasProducts: filteredSaaSProducts, users: filteredUsers, companies: companies, leads: filteredLeads,
-        addClient, addPartner, addProject, addSite, addSaaSProduct, addCompany, addUser, addLead,
-        updateClient, updatePartner, updateProject, updateSite, updateSaaSProduct, updateCompany, updateUser, updateLead,
+        clients: filteredClients, partners: filteredPartners, projects: filteredProjects, saasProducts: filteredSaaSProducts, users: filteredUsers, companies: companies, leads: filteredLeads,
+        addClient, addPartner, addProject, addSaaSProduct, addCompany, addUser, addLead,
+        updateClient, updatePartner, updateProject, updateSaaSProduct, updateCompany, updateUser, updateLead,
+        deleteClient, deletePartner, deleteProject, deleteSaaSProduct, deleteUser, deleteLead,
         updatePaymentStatus,
         paySubscription,
         recordSubscriptionPayment,

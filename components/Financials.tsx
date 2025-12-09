@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import type { Project, Site, Payment } from '../types';
+import type { Project, Payment } from '../types';
 import { CURRENCY_SYMBOLS } from '../constants';
 import { useData } from '../context/DataContext';
 import { CurrencyDollarIcon, CheckBadgeIcon, ExclamationTriangleIcon, CloudIcon, FunnelIcon, ChartBarIcon } from './Icons';
@@ -16,18 +16,16 @@ const MonthlyRevenueChart: React.FC<{
     return (
         <div className="bg-surface p-6 rounded-lg shadow-lg border border-white/10">
             <h3 className="text-xl font-bold mb-6 text-text-primary">
-                Performance Financeira {selectedMonth !== 'all' ? '(Foco no Mês)' : '(Visão Anual)'}
+                Fluxo de Caixa {selectedMonth !== 'all' ? '(Foco no Mês)' : '(Visão Anual)'}
             </h3>
             
             <div className="flex items-end justify-between h-64 gap-2 sm:gap-4">
                 {data.map((item, index) => {
-                    // Lógica de Destaque: Se um mês específico for selecionado, diminui a opacidade dos outros
                     const isFaded = selectedMonth !== 'all' && selectedMonth !== item.index;
                     const opacityClass = isFaded ? 'opacity-30 grayscale' : 'opacity-100';
 
                     return (
                         <div key={index} className={`flex-1 flex flex-col items-center group relative h-full justify-end transition-all duration-500 ${opacityClass}`}>
-                            {/* Tooltip */}
                             <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/90 text-white text-xs p-2 rounded pointer-events-none whitespace-nowrap z-10 border border-white/20 shadow-xl">
                                 <p className="font-bold text-lg mb-1">{item.month}</p>
                                 <div className="space-y-1">
@@ -36,13 +34,11 @@ const MonthlyRevenueChart: React.FC<{
                                 </div>
                             </div>
 
-                            {/* Barra Projetada (Fundo) */}
                             <div 
                                 className="w-full bg-white/5 rounded-t-sm absolute bottom-0 border-t border-white/10"
                                 style={{ height: `${(item.projected / maxValue) * 100}%` }}
                             ></div>
 
-                            {/* Barra Real (Frente) - COR DAS VELAS ALTERADA */}
                             <div 
                                 className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-sm z-0 relative transition-all duration-700 shadow-[0_0_10px_rgba(52,211,153,0.3)] group-hover:from-emerald-500 group-hover:to-emerald-300"
                                 style={{ height: `${(item.value / maxValue) * 100}%` }}
@@ -96,13 +92,17 @@ const KPICard: React.FC<{
 );
 
 const Financials: React.FC = () => {
-  const { projects, sites, clients, updatePaymentStatus, saasProducts } = useData();
-  const allProjects = [...projects, ...sites];
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const { projects, clients, updatePaymentStatus, saasProducts } = useData();
+  
+  // Agora usamos 'projects' diretamente pois ele contém Sites e Projetos unificados
+  const allProjects = projects;
+
+  // Filtros definidos como 'all' por padrão para mostrar TUDO inicialmente
+  const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
 
   const monthsList = [
-      { value: 'all', label: 'Ano Completo' },
+      { value: 'all', label: 'Todos os Meses' },
       { value: 0, label: 'Janeiro' }, { value: 1, label: 'Fevereiro' }, { value: 2, label: 'Março' },
       { value: 3, label: 'Abril' }, { value: 4, label: 'Maio' }, { value: 5, label: 'Junho' },
       { value: 6, label: 'Julho' }, { value: 7, label: 'Agosto' }, { value: 8, label: 'Setembro' },
@@ -115,64 +115,70 @@ const Financials: React.FC = () => {
 
   // Cálculos Financeiros
   const financialData = useMemo(() => {
-      const allPayments = allProjects.flatMap(p => p.payments);
       const monthsLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-      
-      // Inicializa dados para o gráfico (Sempre mostra o ano todo)
       const monthlyStats = monthsLabels.map((m, idx) => ({ month: m, value: 0, projected: 0, index: idx }));
       
-      // Variáveis Totais
-      let yearlyRevenue = 0; // Faturamento Total do Ano (Independente do filtro de mês)
-      let filteredRevenue = 0; // Faturamento do Filtro Selecionado (Mês ou Ano)
+      let yearlyRevenue = 0;
+      let filteredRevenue = 0;
       let filteredPending = 0;
       let filteredOverdue = 0;
 
-      // Lista filtrada para exibição abaixo (Transactions)
-      const filteredPaymentsList: { project: Project | Site, payment: Payment }[] = [];
+      const filteredPaymentsList: { project: Project, payment: Payment }[] = [];
 
-      allPayments.forEach(payment => {
-          const date = new Date(payment.dueDate);
-          const monthIdx = date.getMonth();
-          const year = date.getFullYear();
+      // Itera sobre todos os projetos e sites para extrair pagamentos
+      allProjects.forEach(parentItem => {
+          if (!parentItem.payments || parentItem.payments.length === 0) return;
 
-          if (year === selectedYear) {
-              // 1. Dados Globais do Ano (Para o Gráfico e KPI Anual)
-              monthlyStats[monthIdx].projected += payment.amount;
-              if (payment.status === 'Pago') {
-                  monthlyStats[monthIdx].value += payment.amount;
-                  yearlyRevenue += payment.amount; // Soma ao total anual
-              }
+          parentItem.payments.forEach(payment => {
+            const date = new Date(payment.dueDate);
+            const monthIdx = date.getMonth();
+            const year = date.getFullYear();
 
-              // 2. Dados Filtrados (Para KPIs de Mês e Lista)
-              const isMonthMatch = selectedMonth === 'all' || monthIdx === selectedMonth;
+            // Lógica do Filtro de Ano
+            const isYearMatch = selectedYear === 'all' || year === selectedYear;
 
-              if (isMonthMatch) {
-                  // Acumula KPIs do Filtro
-                  if (payment.status === 'Pago') filteredRevenue += payment.amount;
-                  else if (payment.status === 'Pendente') filteredPending += payment.amount;
-                  else if (payment.status === 'Atrasado') filteredOverdue += payment.amount;
+            if (isYearMatch) {
+                // Dados Globais do Período Selecionado
+                monthlyStats[monthIdx].projected += payment.amount;
+                if (payment.status === 'Pago') {
+                    monthlyStats[monthIdx].value += payment.amount;
+                    yearlyRevenue += payment.amount;
+                }
 
-                  // Adiciona à lista de exibição
-                  const parentProject = allProjects.find(p => p.payments.some(pay => pay.id === payment.id));
-                  if (parentProject) {
-                      filteredPaymentsList.push({ project: parentProject, payment });
-                  }
-              }
-          }
+                // Lógica do Filtro de Mês
+                const isMonthMatch = selectedMonth === 'all' || monthIdx === selectedMonth;
+
+                if (isMonthMatch) {
+                    if (payment.status === 'Pago') filteredRevenue += payment.amount;
+                    else if (payment.status === 'Pendente') filteredPending += payment.amount;
+                    else if (payment.status === 'Atrasado') filteredOverdue += payment.amount;
+
+                    filteredPaymentsList.push({ project: parentItem, payment });
+                }
+            }
+          });
       });
 
-      // Ordena a lista por data
       filteredPaymentsList.sort((a, b) => new Date(a.payment.dueDate).getTime() - new Date(b.payment.dueDate).getTime());
 
       // Cálculo de MRR (Receita Recorrente Mensal)
-      const projectRetainers = allProjects.reduce((acc, p) => p.hasRetainer && p.retainerValue ? acc + p.retainerValue : acc, 0);
-      const saasMRR = saasProducts.reduce((acc, p) => acc + p.plans.reduce((sum, plan) => sum + (plan.price * plan.customerCount), 0), 0);
-      const totalMRR = projectRetainers + saasMRR;
+      const projectRetainers = allProjects.reduce((acc, p) => {
+          if (p.hasRetainer && p.retainerValue) {
+              return acc + Number(p.retainerValue);
+          }
+          return acc;
+      }, 0);
 
-      // Cálculo de Média Mensal (se nenhum mês selecionado)
+      const saasMRR = saasProducts.reduce((acc, p) => {
+          return acc + p.plans.reduce((sum, plan) => sum + (plan.price * plan.customerCount), 0);
+      }, 0);
+      
+      const rawMRR = projectRetainers + saasMRR;
+      const totalMRR = Math.round((rawMRR + Number.EPSILON) * 100) / 100;
+
       const currentMonth = new Date().getMonth();
       const monthsElapsed = selectedYear === new Date().getFullYear() ? currentMonth + 1 : 12;
-      const monthlyAverage = yearlyRevenue / (monthsElapsed || 1);
+      const monthlyAverage = yearlyRevenue / (selectedYear === 'all' ? 12 : monthsElapsed || 1);
 
       return {
           monthlyStats,
@@ -202,7 +208,6 @@ const Financials: React.FC = () => {
               <div className="flex items-center px-2">
                 <span className="text-text-secondary text-xs mr-2 uppercase font-bold tracking-wider">Período:</span>
                 
-                {/* Seletor de Mês */}
                 <select 
                     value={selectedMonth} 
                     onChange={(e) => setSelectedMonth(e.target.value === 'all' ? 'all' : Number(e.target.value))}
@@ -213,60 +218,51 @@ const Financials: React.FC = () => {
                     ))}
                 </select>
 
-                {/* Seletor de Ano */}
                 <select 
                     value={selectedYear} 
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    onChange={(e) => setSelectedYear(e.target.value === 'all' ? 'all' : Number(e.target.value))}
                     className="bg-transparent text-primary font-bold focus:outline-none cursor-pointer"
                 >
+                    <option value="all">Todos os Anos</option>
                     <option value={2023}>2023</option>
                     <option value={2024}>2024</option>
                     <option value={2025}>2025</option>
+                    <option value={2026}>2026</option>
                 </select>
               </div>
           </div>
       </div>
       
-      {/* KPI Cards Grid - Layout ajustado para 5 cards */}
+      {/* KPI Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-          
-          {/* 1. Faturamento ANUAL (Sempre visível) */}
           <KPICard 
-            title={`Faturamento Total (${selectedYear})`} 
+            title={selectedYear === 'all' ? `Faturamento Total (Histórico)` : `Faturamento Total (${selectedYear})`} 
             value={formatMoney(financialData.yearlyRevenue)} 
             icon={<ChartBarIcon className="w-6 h-6"/>}
             colorClass="text-emerald-400"
-            trend="Acumulado do Ano"
+            trend={selectedYear === 'all' ? "Todo o histórico" : "Acumulado do Ano"}
           />
-
-          {/* 2. Faturamento MENSAL (Dinâmico) */}
           <KPICard 
             title={selectedMonth !== 'all' ? `Faturamento em ${monthsList.find(m => m.value === selectedMonth)?.label}` : 'Média Mensal'} 
             value={selectedMonth !== 'all' ? formatMoney(financialData.filteredRevenue) : formatMoney(financialData.monthlyAverage)} 
             icon={<CurrencyDollarIcon className="w-6 h-6"/>}
             colorClass="text-cyan-400"
-            trend={selectedMonth !== 'all' ? "Receita neste mês" : "Baseado no total anual"}
+            trend={selectedMonth !== 'all' ? "Receita neste mês" : "Baseado no período"}
           />
-
-          {/* 3. MRR (Recorrência) */}
           <KPICard 
             title="Receita Recorrente (MRR)" 
             value={formatMoney(financialData.totalMRR)} 
             icon={<CloudIcon className="w-6 h-6"/>}
             colorClass="text-blue-400"
-            trend="SaaS + Retainers"
+            trend="SaaS + Retainers (Sites/Projetos)"
           />
-
-          {/* 4. Pendente */}
           <KPICard 
             title="A Receber (Pendente)" 
             value={formatMoney(financialData.filteredPending)} 
             icon={<CheckBadgeIcon className="w-6 h-6"/>}
             colorClass="text-yellow-400"
-            trend={selectedMonth !== 'all' ? "Pendente no mês" : "Total pendente no ano"}
+            trend={selectedMonth !== 'all' ? "Pendente no mês" : "Total pendente no período"}
           />
-
-          {/* 5. Atrasado */}
           <KPICard 
             title="Em Atraso" 
             value={formatMoney(financialData.filteredOverdue)} 
@@ -276,7 +272,6 @@ const Financials: React.FC = () => {
           />
       </div>
 
-      {/* Main Chart */}
       <MonthlyRevenueChart 
         data={financialData.monthlyStats} 
         currencySymbol={symbol} 
@@ -288,18 +283,17 @@ const Financials: React.FC = () => {
             <div className="p-6 border-b border-white/10 flex justify-between items-center bg-black/20">
                 <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
                     <FunnelIcon className="w-5 h-5 text-primary" />
-                    Transações Detalhadas
+                    Transações Detalhadas (Parcelas de Todos os Projetos)
                 </h3>
                 <span className="text-sm text-text-secondary bg-white/5 px-3 py-1 rounded-full">
                     {financialData.filteredPaymentsList.length} registros
                 </span>
             </div>
             
-            <div className="space-y-2 p-4 max-h-[600px] overflow-y-auto custom-scrollbar">
+            <div className="space-y-2 p-4 max-h-[800px] overflow-y-auto custom-scrollbar">
                 {financialData.filteredPaymentsList.length > 0 ? (
                     financialData.filteredPaymentsList.map(({ project, payment }) => (
                         <div key={`${project.id}-${payment.id}`} className="border border-white/5 rounded-lg p-4 bg-background/20 hover:bg-background/40 transition-colors flex flex-col md:flex-row justify-between items-center gap-4">
-                            
                             <div className="flex-1">
                                 <div className="flex items-center gap-3">
                                     <div className={`w-2 h-10 rounded-full ${
@@ -307,7 +301,16 @@ const Financials: React.FC = () => {
                                         payment.status === 'Atrasado' ? 'bg-red-500' : 'bg-yellow-500'
                                     }`}></div>
                                     <div>
-                                        <h4 className="font-bold text-text-primary">{project.name}</h4>
+                                        <h4 className="font-bold text-text-primary flex items-center gap-2">
+                                            {project.name}
+                                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                                                project.category === 'Site' 
+                                                ? 'border-purple-500/30 bg-purple-500/10 text-purple-400' 
+                                                : 'border-blue-500/30 bg-blue-500/10 text-blue-400'
+                                            }`}>
+                                                {project.category || 'Geral'}
+                                            </span>
+                                        </h4>
                                         <p className="text-sm text-text-secondary">{getClientName(project.clientId)}</p>
                                     </div>
                                 </div>
@@ -338,13 +341,13 @@ const Financials: React.FC = () => {
                                     )}
                                 </div>
                             </div>
-
                         </div>
                     ))
                 ) : (
                     <div className="text-center py-16 flex flex-col items-center justify-center text-text-secondary">
                         <CurrencyDollarIcon className="w-12 h-12 mb-3 opacity-20" />
-                        <p>Nenhuma transação encontrada para este período.</p>
+                        <p>Nenhuma transação encontrada.</p>
+                        <p className="text-sm mt-2 opacity-50">Certifique-se de que os projetos possuem parcelas ou entrada cadastradas.</p>
                     </div>
                 )}
             </div>
