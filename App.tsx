@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -105,7 +106,7 @@ const App: React.FC = () => {
         impersonatedCompany={impersonatedCompany}
         setActiveView={setActiveView}
     >
-      <div className="flex h-screen bg-slate-100 text-text-primary">
+      <div className="flex h-[100dvh] bg-slate-100 text-text-primary overflow-hidden">
         <Sidebar 
             currentUser={currentUser} 
             activeView={activeView} 
@@ -114,29 +115,39 @@ const App: React.FC = () => {
             isOpen={isSidebarOpen}
             onClose={() => setIsSidebarOpen(false)}
         />
-        <div className="flex-1 flex flex-col overflow-hidden">
-            <header className="lg:hidden bg-primary-dark border-b border-white/10 flex items-center justify-between p-4 sticky top-0 z-20 shadow-md">
-                <button onClick={() => setIsSidebarOpen(true)} className="text-white">
+        <div className="flex-1 flex flex-col w-full h-full relative overflow-hidden">
+            {/* Header com Menu Hamburger - Visível em telas < XL (Tablets e Mobile) */}
+            <header className="xl:hidden bg-[#020617] border-b border-white/10 flex items-center justify-between p-4 sticky top-0 z-30 shadow-md shrink-0">
+                <button 
+                    onClick={() => setIsSidebarOpen(true)} 
+                    className="text-white p-1 hover:bg-white/10 rounded focus:outline-none"
+                    aria-label="Abrir Menu"
+                >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
-                <h1 className="text-xl font-bold text-white">{activeView}</h1>
-                <div className="w-6"></div>
+                <h1 className="text-lg font-bold text-white truncate px-2">{activeView}</h1>
+                <div className="w-8">
+                     {/* Espaço reservado para balancear o layout do header */}
+                </div>
             </header>
 
             {impersonatedCompany && (
-                <div className="bg-yellow-500 text-black text-center p-2 font-bold flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4 shadow-sm z-10">
-                    <span>Visualizando como {impersonatedCompany.name}</span>
-                    <button onClick={handleStopImpersonating} className="bg-black/20 text-white px-3 py-1 rounded-md text-sm hover:bg-black/40">
+                <div className="bg-yellow-500 text-black text-center p-2 font-bold flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4 shadow-sm z-20 shrink-0">
+                    <span className="text-sm">Visualizando como {impersonatedCompany.name}</span>
+                    <button onClick={handleStopImpersonating} className="bg-black/20 text-white px-3 py-1 rounded-md text-xs hover:bg-black/40 whitespace-nowrap">
                         Voltar para Visão SuperAdmin
                     </button>
                 </div>
             )}
-            <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto bg-slate-50">
-                <ErrorBoundary key={activeView}>
-                    {renderView()}
-                </ErrorBoundary>
+            
+            <main className="flex-1 p-4 sm:p-6 overflow-y-auto bg-slate-50 w-full custom-scrollbar">
+                <div className="max-w-7xl mx-auto w-full">
+                    <ErrorBoundary key={activeView}>
+                        {renderView()}
+                    </ErrorBoundary>
+                </div>
             </main>
         </div>
       </div>

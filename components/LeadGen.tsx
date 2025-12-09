@@ -22,7 +22,12 @@ const LeadGen: React.FC = () => {
     
     // Estados de Automação
     const [automationStatus, setAutomationStatus] = useState<'idle' | 'configuring' | 'sending' | 'sent'>('idle');
-    const [messageTemplate, setMessageTemplate] = useState('Olá {nome}, vi sua empresa no Google e gostaria de apresentar uma oportunidade.');
+    
+    // Templates de mensagem
+    const MSG_TEMPLATE_PT = 'Olá {nome}, vi sua empresa no Google e gostaria de apresentar uma oportunidade.';
+    const MSG_TEMPLATE_EN = 'Hello {nome}, I found your business on Google and would like to present an opportunity.';
+
+    const [messageTemplate, setMessageTemplate] = useState(MSG_TEMPLATE_PT);
     const [sendingProgress, setSendingProgress] = useState(0);
 
     const callGeminiDirect = async (prompt: string): Promise<string> => {
@@ -41,41 +46,41 @@ const LeadGen: React.FC = () => {
 
         setIsSearching(true);
         setResults([]);
-        setStatusMessage('Iniciando busca ampliada...');
+        setStatusMessage('Iniciando varredura profunda...');
         
         try {
-            // Estratégia AUMENTADA: 5 variações para buscar até 100 leads (5 x 20)
-            const variations = [
-                `List 20 popular businesses for: "${keyword}" in "${location}"`,
-                `List 20 top rated "${keyword}" near "${location}"`,
-                `List 20 affordable or small "${keyword}" in "${location}"`,
-                `List 20 established "${keyword}" companies in "${location}" area`,
-                `List 20 different "${keyword}" services located in "${location}"`
+            const letterBatches = [
+                "A, B, C, D, E",
+                "F, G, H, I, J",
+                "K, L, M, N, O",
+                "P, Q, R, S, T",
+                "U, V, W, X, Y, Z"
             ];
 
             let accumulatedLeads: ScrapedLead[] = [];
             const uniquePhones = new Set();
+            let languageDetected = false;
 
-            // Loop por todas as variações (5 ciclos)
-            for (let i = 0; i < variations.length; i++) { 
-                setStatusMessage(`Varredura profunda ${i + 1}/${variations.length} em andamento...`);
+            for (let i = 0; i < letterBatches.length; i++) { 
+                setStatusMessage(`Buscando empresas de ${letterBatches[i].split(',')[0]} a ${letterBatches[i].split(',').pop()}... (${accumulatedLeads.length} encontrados)`);
                 
-                // PROMPT AJUSTADO PARA 20 RESULTADOS POR VEZ
                 const prompt = `
-                    Act as a data scraper. I need real business leads for: ${variations[i]}.
-                    List exactly 20 results per batch if possible.
+                    Act as a data scraper. I need real business leads for: "${keyword}" in "${location}".
+                    
+                    CRITICAL INSTRUCTION:
+                    List ONLY businesses where the name starts with one of these letters: ${letterBatches[i]}.
+                    I need exactly 30 unique results for this batch.
                     
                     Format: NAME | PHONE (with DDI) | ADDRESS
                     
                     Example:
-                    Pizzaria Top | +55 11 99999-9999 | Rua Augusta, SP
-                    Consultório Dr. Silva | +55 21 98888-8888 | Copacabana, RJ
+                    ${letterBatches[i].split(',')[0]} Company | +55 11 99999-9999 | Rua Exemplo, SP
                     
                     Rules:
                     1. NO Markdown. NO Tables. NO numbering.
                     2. PHONE IS MANDATORY. Skip if no phone.
-                    3. If country is Brazil, add +55. If USA, add +1.
-                    4. Try not to repeat common big chains, look for local businesses.
+                    3. ALWAYS include the correct country code (DDI) in the phone number (e.g., +55 for Brazil, +1 for USA, +44 for UK, etc).
+                    4. Focus on local businesses.
                 `;
 
                 try {
@@ -83,19 +88,24 @@ const LeadGen: React.FC = () => {
                     const lines = textResponse.split('\n');
                     
                     for (const line of lines) {
-                        // Verifica se a linha tem o separador |
                         if (line.includes('|')) {
                             const parts = line.split('|').map(p => p.trim());
                             if (parts.length >= 2) {
                                 const name = parts[0].replace(/[*#-]/g, ''); 
                                 const phone = parts[1];
                                 const address = parts[2] || location;
-
-                                // Limpa telefone para verificar duplicidade
                                 const cleanPhone = phone.replace(/[^0-9]/g, '');
 
-                                // Validação básica de tamanho de telefone e duplicidade
-                                if (cleanPhone.length > 8 && !uniquePhones.has(cleanPhone)) {
+                                if (cleanPhone.length > 7 && !uniquePhones.has(cleanPhone)) {
+                                    if (!languageDetected) {
+                                        if (phone.includes('+55')) {
+                                            setMessageTemplate(MSG_TEMPLATE_PT);
+                                        } else {
+                                            setMessageTemplate(MSG_TEMPLATE_EN);
+                                        }
+                                        languageDetected = true;
+                                    }
+
                                     uniquePhones.add(cleanPhone);
                                     accumulatedLeads.push({
                                         id: `lead-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -109,14 +119,11 @@ const LeadGen: React.FC = () => {
                         }
                     }
                     
-                    // Atualiza resultados parciais na tela para o usuário ver chegando
                     setResults([...accumulatedLeads]);
-                    
-                    // Pausa estratégica para evitar Rate Limit da API do Google
-                    await new Promise(r => setTimeout(r, 1500)); 
+                    await new Promise(r => setTimeout(r, 1000)); 
 
                 } catch (err: any) {
-                    console.warn(`Erro na varredura ${i}:`, err);
+                    console.warn(`Erro no lote ${i}:`, err);
                 }
             }
             
@@ -150,10 +157,8 @@ const LeadGen: React.FC = () => {
                 const lead = selectedLeads[i];
                 const personalizedMsg = messageTemplate.replace('{nome}', lead.name);
                 
-                // Simula envio (ou envia real se configurado Z-API)
                 await sendWhatsAppMessage(lead.phone, personalizedMsg);
                 
-                // Salva no CRM
                 await addLead({
                     name: lead.name,
                     phone: lead.phone,
@@ -170,7 +175,6 @@ const LeadGen: React.FC = () => {
                 });
 
                 setSendingProgress(Math.round(((i + 1) / selectedLeads.length) * 100));
-                // Delay visual
                 await new Promise(resolve => setTimeout(resolve, 800));
             }
     
@@ -193,10 +197,10 @@ const LeadGen: React.FC = () => {
     const selectedCount = results.filter(r => r.selected).length;
 
     return (
-        <div className="h-full flex flex-col relative">
+        <div className="flex flex-col relative h-full">
             {/* Modal de Configuração de Mensagem */}
             {automationStatus === 'configuring' && (
-                <div className="absolute inset-0 z-20 bg-black/80 flex items-center justify-center p-6 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm">
                     <div className="bg-surface border border-white/10 p-6 rounded-lg shadow-2xl w-full max-w-lg">
                         <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-text-primary">
                             <PaperAirplaneIcon className="w-6 h-6 text-primary" /> Configurar Disparo
@@ -208,7 +212,7 @@ const LeadGen: React.FC = () => {
                             rows={4}
                             className="w-full px-3 py-2 bg-background border border-white/20 rounded-md text-text-primary mb-2 focus:border-primary outline-none"
                         />
-                        <div className="flex gap-2 justify-end">
+                        <div className="flex flex-col sm:flex-row gap-2 justify-end">
                             <button onClick={() => setAutomationStatus('idle')} className="px-4 py-2 text-text-secondary hover:text-text-primary">Cancelar</button>
                             <button onClick={handleStartAutomation} className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 font-medium">Iniciar Automação</button>
                         </div>
@@ -218,7 +222,7 @@ const LeadGen: React.FC = () => {
 
              {/* Barra de Progresso */}
              {automationStatus === 'sending' && (
-                <div className="absolute inset-0 z-20 bg-black/90 flex items-center justify-center p-6 flex-col backdrop-blur-md">
+                <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-6 flex-col backdrop-blur-md">
                     <div className="w-64 bg-white/10 rounded-full h-4 mb-4">
                         <div className="bg-primary h-4 rounded-full transition-all duration-300" style={{width: `${sendingProgress}%`}}></div>
                     </div>
@@ -226,14 +230,14 @@ const LeadGen: React.FC = () => {
                 </div>
              )}
 
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-3xl font-bold text-text-primary flex items-center gap-2">
-                    <MapPinIcon className="w-8 h-8 text-primary" /> Captação Inteligente
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-2 shrink-0">
+                <h2 className="text-2xl sm:text-3xl font-bold text-text-primary flex items-center gap-2">
+                    <MapPinIcon className="w-6 h-6 sm:w-8 sm:h-8 text-primary" /> 
+                    <span className="truncate">Captação Inteligente</span>
                 </h2>
             </div>
 
-            <div className="bg-surface p-6 rounded-lg shadow-lg border border-white/10 mb-6">
-                
+            <div className="bg-surface p-4 sm:p-6 rounded-lg shadow-lg border border-white/10 mb-6 shrink-0">
                 <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 items-end">
                     <div className="flex-1 w-full">
                         <label className="block text-sm font-medium text-text-secondary mb-1">Nicho / Setor</label>
@@ -252,13 +256,13 @@ const LeadGen: React.FC = () => {
                             value={location}
                             onChange={e => setLocation(e.target.value)}
                             className="w-full px-4 py-2 bg-background/50 border border-white/20 rounded-md text-text-primary focus:border-primary outline-none"
-                            placeholder="Ex: São Paulo, SP ou Miami, FL"
+                            placeholder="Ex: São Paulo, SP"
                         />
                     </div>
                     <button 
                         type="submit" 
                         disabled={!keyword || !location || isSearching}
-                        className="bg-primary text-white px-8 py-2.5 rounded-md shadow-md hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium min-w-[140px]"
+                        className="w-full md:w-auto bg-primary text-white px-8 py-2.5 rounded-md shadow-md hover:bg-primary/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 font-medium min-w-[140px]"
                     >
                         {isSearching ? 'Buscando...' : 'Buscar Leads'}
                     </button>
@@ -274,10 +278,9 @@ const LeadGen: React.FC = () => {
 
             {results.length > 0 && (
                 <div className="flex-1 flex flex-col bg-surface rounded-lg border border-white/10 overflow-hidden">
-                    <div className="p-4 border-b border-white/10 flex justify-between items-center bg-black/20">
-                        <h3 className="font-bold text-text-primary">Resultados Encontrados ({results.length})</h3>
-                        <div className="flex gap-3">
-                            {/* Botão de Selecionar Todos */}
+                    <div className="p-4 border-b border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-black/20 gap-3 shrink-0">
+                        <h3 className="font-bold text-text-primary">Resultados ({results.length})</h3>
+                        <div className="flex gap-3 w-full sm:w-auto justify-between sm:justify-end">
                             <button 
                                 onClick={() => setResults(prev => prev.map(r => ({ ...r, selected: true })))}
                                 className="text-xs text-text-secondary hover:text-primary underline"
@@ -287,10 +290,12 @@ const LeadGen: React.FC = () => {
                             <button 
                                 onClick={() => setAutomationStatus('configuring')}
                                 disabled={selectedCount === 0}
-                                className="bg-green-600 text-white px-6 py-2 rounded-md text-sm hover:bg-green-700 disabled:opacity-50 shadow-lg font-medium flex items-center gap-2"
+                                className="bg-green-600 text-white px-4 sm:px-6 py-2 rounded-md text-sm hover:bg-green-700 disabled:opacity-50 shadow-lg font-medium flex items-center gap-2"
                             >
                                 <PaperAirplaneIcon className="w-4 h-4" />
-                                Importar para CRM ({selectedCount})
+                                <span className="hidden sm:inline">Importar para CRM</span>
+                                <span className="sm:hidden">Importar</span>
+                                ({selectedCount})
                             </button>
                         </div>
                     </div>
@@ -303,8 +308,8 @@ const LeadGen: React.FC = () => {
                                 onClick={() => toggleSelection(lead.id)}
                             >
                                 <div className="flex justify-between items-start mb-2">
-                                    <h4 className="font-bold text-text-primary truncate w-48">{lead.name}</h4>
-                                    <div className={`w-5 h-5 rounded border flex items-center justify-center ${lead.selected ? 'bg-primary border-primary' : 'border-text-secondary'}`}>
+                                    <h4 className="font-bold text-text-primary truncate w-full pr-8">{lead.name}</h4>
+                                    <div className={`absolute top-4 right-4 w-5 h-5 rounded border flex items-center justify-center ${lead.selected ? 'bg-primary border-primary' : 'border-text-secondary'}`}>
                                         {lead.selected && <CheckBadgeIcon className="w-4 h-4 text-white" />}
                                     </div>
                                 </div>
