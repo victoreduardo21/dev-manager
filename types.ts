@@ -1,5 +1,3 @@
-
-
 // Fix: Import React to resolve "Cannot find namespace 'React'" error.
 import React from 'react';
 
@@ -151,6 +149,7 @@ export interface WhatsAppConfig {
 export interface DataContextType {
     currentUser: User | null;
     activeCompanyName: string;
+    activeCompanyId?: string;
     clients: Client[];
     partners: Partner[];
     projects: Project[];

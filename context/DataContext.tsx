@@ -1,5 +1,3 @@
-
-
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import Modal from '../components/Modal';
 import type { Client, Partner, Project, SaaSProduct, User, Company, Payment, DataContextType, View, SubscriptionPayment, Lead, ChatMessage, WhatsAppConfig } from '../types';
@@ -483,6 +481,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const value: DataContextType = {
         currentUser,
         activeCompanyName,
+        activeCompanyId,
         clients: filteredClients, partners: filteredPartners, projects: filteredProjects, saasProducts: filteredSaaSProducts, users: filteredUsers, companies: companies, leads: filteredLeads,
         addClient, addPartner, addProject, addSaaSProduct, addCompany, addUser, addLead,
         updateClient, updatePartner, updateProject, updateSaaSProduct, updateCompany, updateUser, updateLead,

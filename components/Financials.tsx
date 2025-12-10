@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import type { Project, Payment } from '../types';
 import { CURRENCY_SYMBOLS } from '../constants';
 import { useData } from '../context/DataContext';
-import { CurrencyDollarIcon, CheckBadgeIcon, ExclamationTriangleIcon, CloudIcon, FunnelIcon, ChartBarIcon, CalendarIcon } from './Icons';
+import { CurrencyDollarIcon, CheckBadgeIcon, ExclamationTriangleIcon, CloudIcon, FunnelIcon, ChartBarIcon, CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
 // Helper to format compact numbers
 const formatCompactNumber = (number: number) => {
@@ -26,7 +26,6 @@ interface ChartProps {
     selectedMonth: number | 'all';
 }
 
-// Componente de Gráfico de Barras (CSS Puro)
 const MonthlyRevenueChart: React.FC<ChartProps> = ({ data, currencySymbol, selectedMonth }) => {
     const maxValue = Math.max(...data.map(d => Math.max(d.value, d.projected)), 1);
 
@@ -114,7 +113,139 @@ const KPICard: React.FC<{
     </div>
 );
 
-const Financials: React.FC = () => {
+// --- Novo Componente de Seletor de Mês/Ano (Estilo Grade) ---
+
+interface MonthYearPickerProps {
+    selectedMonth: number | 'all';
+    selectedYear: number | 'all';
+    onChange: (month: number | 'all', year: number | 'all') => void;
+}
+
+const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ selectedMonth, selectedYear, onChange }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    // Usa o ano atual para navegação se 'all' estiver selecionado
+    const [viewYear, setViewYear] = useState(selectedYear === 'all' ? new Date().getFullYear() : selectedYear);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    const months = [
+        { abbr: 'jan', full: 'Janeiro' }, { abbr: 'fev', full: 'Fevereiro' }, { abbr: 'mar', full: 'Março' },
+        { abbr: 'abr', full: 'Abril' }, { abbr: 'mai', full: 'Maio' }, { abbr: 'jun', full: 'Junho' },
+        { abbr: 'jul', full: 'Julho' }, { abbr: 'ago', full: 'Agosto' }, { abbr: 'set', full: 'Setembro' },
+        { abbr: 'out', full: 'Outubro' }, { abbr: 'nov', full: 'Novembro' }, { abbr: 'dez', full: 'Dezembro' }
+    ];
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleMonthClick = (index: number) => {
+        onChange(index, viewYear);
+        setIsOpen(false);
+    };
+
+    const handleClear = () => {
+        onChange('all', 'all');
+        setIsOpen(false);
+    };
+
+    const handleThisMonth = () => {
+        const now = new Date();
+        const currentM = now.getMonth();
+        const currentY = now.getFullYear();
+        setViewYear(currentY);
+        onChange(currentM, currentY);
+        setIsOpen(false);
+    };
+
+    const getDisplayLabel = () => {
+        if (selectedYear === 'all') return 'Todo o período';
+        if (selectedMonth === 'all') return `Todo o ano de ${selectedYear}`;
+        return `${months[selectedMonth].full} de ${selectedYear}`;
+    };
+
+    return (
+        <div className="relative" ref={containerRef}>
+            <div className="flex items-center gap-2">
+                <span className="text-sm text-text-secondary mr-1">Período:</span>
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="flex items-center justify-between gap-3 bg-surface border border-white/20 hover:border-primary/50 rounded-lg px-4 py-2 text-sm font-medium text-text-primary shadow-sm min-w-[180px] transition-all"
+                >
+                    <span className="capitalize">{getDisplayLabel()}</span>
+                    <CalendarIcon className="w-4 h-4 text-primary" />
+                </button>
+            </div>
+
+            {isOpen && (
+                <div className="absolute top-full right-0 mt-2 bg-surface border border-white/10 rounded-lg shadow-2xl z-50 w-72 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                    {/* Header: Year Selector */}
+                    <div className="flex justify-between items-center mb-4 pb-2 border-b border-white/10">
+                        <button 
+                            onClick={() => setViewYear(prev => prev - 1)}
+                            className="p-1 hover:bg-white/10 rounded-full text-text-secondary hover:text-white"
+                        >
+                            <ChevronLeftIcon className="w-5 h-5" />
+                        </button>
+                        <span className="font-bold text-lg text-text-primary">{viewYear}</span>
+                        <button 
+                            onClick={() => setViewYear(prev => prev + 1)}
+                            className="p-1 hover:bg-white/10 rounded-full text-text-secondary hover:text-white"
+                        >
+                            <ChevronRightIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+
+                    {/* Body: Months Grid */}
+                    <div className="grid grid-cols-4 gap-2 mb-4">
+                        {months.map((m, index) => {
+                            const isSelected = selectedMonth === index && selectedYear === viewYear;
+                            return (
+                                <button
+                                    key={m.abbr}
+                                    onClick={() => handleMonthClick(index)}
+                                    className={`py-2 text-sm rounded-md transition-colors capitalize
+                                        ${isSelected 
+                                            ? 'bg-primary text-white font-bold shadow-md' 
+                                            : 'text-text-secondary hover:bg-white/10 hover:text-text-primary'
+                                        }
+                                    `}
+                                >
+                                    {m.abbr}
+                                </button>
+                            )
+                        })}
+                    </div>
+
+                    {/* Footer: Actions */}
+                    <div className="flex justify-between items-center pt-2 border-t border-white/10">
+                        <button 
+                            onClick={handleClear}
+                            className="text-xs font-medium text-text-secondary hover:text-primary transition-colors"
+                        >
+                            Limpar
+                        </button>
+                        <button 
+                            onClick={handleThisMonth}
+                            className="text-xs font-bold text-primary hover:text-primary-hover transition-colors"
+                        >
+                            Este mês
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// --------------------------------------------------------
+
+export default function Financials() {
   const { projects, clients, updatePaymentStatus, saasProducts } = useData();
   
   const allProjects = projects;
@@ -135,22 +266,20 @@ const Financials: React.FC = () => {
     return clients.find(c => c.id === clientId)?.name || 'N/A';
   }
 
+  // availableYears lógica mantida caso precise para outros filtros futuros, 
+  // mas o novo picker gerencia o "viewYear" internamente.
   const availableYears = useMemo(() => {
     const years = new Set<number>();
     const currentYear = new Date().getFullYear();
-    
-    // Adiciona anos do atual até 2030, conforme solicitado
     for (let i = currentYear; i <= 2030; i++) {
         years.add(i);
     }
-
     allProjects.forEach(p => {
         p.payments.forEach(pay => {
             const date = pay.status === 'Pago' && pay.paidDate ? new Date(pay.paidDate) : new Date(pay.dueDate);
             years.add(date.getFullYear());
         });
     });
-
     return Array.from(years).sort((a, b) => b - a);
   }, [allProjects]);
 
@@ -255,34 +384,16 @@ const Financials: React.FC = () => {
             <p className="text-text-secondary">Visão geral de faturamento e fluxo de caixa.</p>
           </div>
           
-          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 bg-background/30 p-2 rounded-xl border border-white/10">
-                <div className="flex items-center gap-2 px-2">
-                    <CalendarIcon className="w-4 h-4 text-primary" />
-                    <span className="text-xs font-bold text-text-secondary uppercase tracking-wider">Filtros:</span>
-                </div>
-                
-                <div className="flex gap-2">
-                    <select 
-                        value={selectedMonth} 
-                        onChange={(e) => setSelectedMonth(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                        className="bg-surface text-text-primary text-sm font-medium focus:outline-none border border-white/10 rounded-lg px-3 py-1.5 cursor-pointer hover:border-primary/50 transition-colors shadow-sm"
-                    >
-                        {monthsList.map(m => (
-                            <option key={m.value} value={m.value}>{m.label}</option>
-                        ))}
-                    </select>
-
-                    <select 
-                        value={selectedYear} 
-                        onChange={(e) => setSelectedYear(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                        className="bg-primary text-white text-sm font-bold focus:outline-none border border-primary/50 rounded-lg px-3 py-1.5 cursor-pointer shadow-sm hover:bg-primary/90 transition-colors"
-                    >
-                        <option value="all">Todos os Anos</option>
-                        {availableYears.map(year => (
-                            <option key={year} value={year}>{year}</option>
-                        ))}
-                    </select>
-                </div>
+          {/* Novo Componente de Filtro */}
+          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+              <MonthYearPicker 
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+                onChange={(m, y) => {
+                    setSelectedMonth(m);
+                    setSelectedYear(y);
+                }}
+              />
           </div>
       </div>
       
@@ -404,13 +515,10 @@ const Financials: React.FC = () => {
                     <div className="text-center py-16 flex flex-col items-center justify-center text-text-secondary">
                         <CurrencyDollarIcon className="w-12 h-12 mb-3 opacity-20" />
                         <p>Nenhuma transação encontrada para este período.</p>
-                        <p className="text-sm mt-2 opacity-50">Tente ajustar os filtros de ano ou mês.</p>
+                        <p className="text-sm mt-2 opacity-50">Tente ajustar o filtro de mês.</p>
                     </div>
                 )}
             </div>
         </div>
-    </div>
-  );
-};
-
-export default Financials;
+    );
+}
