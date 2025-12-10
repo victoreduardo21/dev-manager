@@ -287,9 +287,17 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         closeModal();
     };
 
-    const addUser = async (data: Omit<User, 'id' | 'companyId' | 'password'>) => {
-        if (!activeCompanyId) return;
-        const newItem = { ...data, id: `user${Date.now()}`, companyId: activeCompanyId, role: data.role || 'User'};
+    const addUser = async (data: Omit<User, 'id' | 'password'>) => {
+        // Use provided companyId or fall back to activeCompanyId
+        const targetCompanyId = data.companyId || activeCompanyId;
+        if (!targetCompanyId) return;
+        
+        const newItem = { 
+            ...data, 
+            id: `user${Date.now()}`, 
+            companyId: targetCompanyId, 
+            role: data.role || 'User'
+        };
         await api.saveItem('users', newItem);
         setUsers(prev => [...prev, newItem]);
         closeModal();

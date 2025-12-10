@@ -1,19 +1,31 @@
 
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import type { User } from '../types';
 import { useData } from '../context/DataContext';
 
 const UserForm: React.FC<{ 
-    // Fix: Correct the onSave prop type to align with addUser and updateUser signatures.
-    onSave: (user: Omit<User, 'id' | 'companyId' | 'password'> | User) => Promise<void>; 
+    onSave: (user: Omit<User, 'id' | 'password'> | User) => Promise<void>; 
     initialData?: User;
 }> = ({ onSave, initialData }) => {
-    const { activeCompanyName } = useData();
+    const { activeCompanyName, activeCompanyId, currentUser, companies } = useData();
     const [name, setName] = useState(initialData?.name || '');
     const [email, setEmail] = useState(initialData?.email || '');
     const [role, setRole] = useState<'Admin' | 'User'>(initialData?.role === 'Admin' ? 'Admin' : 'User');
+    
+    // Logic for company selection (SuperAdmin only)
+    const [selectedCompanyId, setSelectedCompanyId] = useState(initialData?.companyId || (currentUser?.role === 'SuperAdmin' && !initialData ? '' : ''));
+    
     const [error, setError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
+
+    // Initial value for SuperAdmin when creating new user (default to first available or none)
+    useEffect(() => {
+        if (!initialData && currentUser?.role === 'SuperAdmin' && !selectedCompanyId && companies.length > 0) {
+             // Optional: Default to first company or keep empty to force selection
+             setSelectedCompanyId(companies[0].id);
+        }
+    }, [initialData, currentUser, companies]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,28 +33,61 @@ const UserForm: React.FC<{
             setError('Nome e Email são obrigatórios.');
             return;
         }
+        
+        // Validation for SuperAdmin
+        let finalCompanyId = selectedCompanyId;
+        if (currentUser?.role === 'SuperAdmin' && !finalCompanyId && !initialData) {
+            setError('Por favor, selecione uma empresa para este usuário.');
+            return;
+        }
+        
+        // If not SuperAdmin, or if editing and locked, use existing context/data
+        if (currentUser?.role !== 'SuperAdmin') {
+            finalCompanyId = initialData?.companyId || (activeCompanyId as string);
+        }
+
         setIsSaving(true);
-        const userData = { name, email, role };
+        const userData = { name, email, role, companyId: finalCompanyId };
         if (initialData) {
             await onSave({ ...initialData, ...userData });
         } else {
-            await onSave(userData);
+            await onSave(userData as any);
         }
     };
+
+    // Determine displayed company name
+    const displayCompanyName = initialData 
+        ? companies.find(c => c.id === initialData.companyId)?.name || 'Empresa Desconhecida'
+        : activeCompanyName;
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
             {error && <p className="text-red-500 text-sm">{error}</p>}
             
-            {/* Campo de referência da empresa (apenas leitura) */}
+            {/* Campo de referência da empresa */}
             <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">Empresa Vinculada</label>
-                <input 
-                    type="text" 
-                    value={activeCompanyName} 
-                    disabled 
-                    className="w-full px-3 py-2 bg-background/30 border border-white/10 rounded-md text-text-secondary cursor-not-allowed italic" 
-                />
+                {currentUser?.role === 'SuperAdmin' ? (
+                    <select 
+                        value={selectedCompanyId} 
+                        onChange={e => setSelectedCompanyId(e.target.value)}
+                        className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary text-text-primary"
+                        disabled={!!initialData} // Lock company change on edit if preferred, or remove disabled to allow move
+                    >
+                         <option value="" disabled>Selecione uma empresa</option>
+                        {companies.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                ) : (
+                    <input 
+                        type="text" 
+                        value={displayCompanyName} 
+                        disabled 
+                        className="w-full px-3 py-2 bg-background/30 border border-white/10 rounded-md text-text-secondary cursor-not-allowed italic" 
+                    />
+                )}
+                {currentUser?.role === 'SuperAdmin' && initialData && <p className="text-xs text-text-secondary mt-1">A empresa não pode ser alterada após a criação.</p>}
             </div>
 
             <div>
@@ -77,6 +122,9 @@ const UserForm: React.FC<{
 };
 
 const UserCard: React.FC<{ user: User; onEdit: (user: User) => void; }> = ({ user, onEdit }) => {
+    const { companies } = useData();
+    const userCompany = companies.find(c => c.id === user.companyId)?.name;
+
     const getInitials = (name: string) => {
         return name
           .split(' ')
@@ -100,6 +148,7 @@ const UserCard: React.FC<{ user: User; onEdit: (user: User) => void; }> = ({ use
                     </span>
                 </div>
                 <p className="text-sm text-text-secondary truncate">{user.email}</p>
+                {userCompany && <p className="text-xs text-primary/70 mt-1 truncate">{userCompany}</p>}
              </div>
         </div>
          <div className="mt-4 pt-4 border-t border-white/10 text-right">
