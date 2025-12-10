@@ -167,7 +167,7 @@ export interface DataContextType {
     // addSite removed
     addSaaSProduct: (product: Omit<SaaSProduct, 'id'| 'companyId'>) => Promise<void>;
     addCompany: (companyData: Omit<Company, 'id' | 'subscriptionDueDate' | 'paymentHistory'> & { adminUser: { name: string; email: string; phone: string } }) => Promise<void>;
-    addUser: (user: Omit<User, 'id' | 'password'>) => Promise<void>; // Permite companyId opcional
+    addUser: (user: Omit<User, 'id'>) => Promise<void>; // Removido 'password' do Omit para permitir envio
     addLead: (lead: Omit<Lead, 'id' | 'companyId' | 'createdAt' | 'messages'> & { messages?: ChatMessage[] }) => Promise<void>;
     updateClient: (client: Client) => Promise<void>;
     updatePartner: (partner: Partner) => Promise<void>;

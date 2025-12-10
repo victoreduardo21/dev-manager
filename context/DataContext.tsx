@@ -28,7 +28,7 @@ const PasswordDisplay: React.FC<{ user: User }> = ({ user }) => (
         <p className="text-text-secondary text-sm">Por favor, compartilhe estas credenciais com eles:</p>
         <div className="bg-background/50 border border-white/20 rounded-md p-4 my-4 text-left">
             <p><strong className="text-text-secondary">Email:</strong> {user.email}</p>
-            <p><strong className="text-text-secondary">Senha Temporária:</strong> <span className="font-mono bg-black/30 px-2 py-1 rounded">{user.password}</span></p>
+            <p><strong className="text-text-secondary">Senha:</strong> <span className="font-mono bg-black/30 px-2 py-1 rounded">{user.password}</span></p>
         </div>
         <p className="text-xs text-text-secondary">Eles devem alterar a senha no primeiro login.</p>
     </div>
@@ -125,7 +125,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const activeCompanyId = impersonatedCompany?.id || currentUser?.companyId;
 
     const activeCompanyName = useMemo(() => {
-        return companies.find(c => c.id === activeCompanyId)?.name || 'Empresa';
+        const found = companies.find(c => c.id === activeCompanyId);
+        if (found) return found.name;
+        // Fallback: Se o ID existir e não for encontrado na lista (ex: cadastro recente onde ID = Nome), retorna o ID.
+        return activeCompanyId && activeCompanyId.trim() !== '' ? activeCompanyId : 'Empresa';
     }, [companies, activeCompanyId]);
 
     const filterByCompany = <T extends { companyId: string }>(data: T[]): T[] => {
@@ -287,20 +290,27 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         closeModal();
     };
 
-    const addUser = async (data: Omit<User, 'id' | 'password'>) => {
+    const addUser = async (data: Omit<User, 'id'>) => {
         // Use provided companyId or fall back to activeCompanyId
         const targetCompanyId = data.companyId || activeCompanyId;
         if (!targetCompanyId) return;
         
-        const newItem = { 
+        // Use password if provided, otherwise generate a random one
+        const finalPassword = data.password || Math.random().toString(36).slice(-8);
+
+        const newItem: User = { 
             ...data, 
             id: `user${Date.now()}`, 
             companyId: targetCompanyId, 
-            role: data.role || 'User'
+            role: data.role || 'User',
+            password: finalPassword 
         };
+        
         await api.saveItem('users', newItem);
         setUsers(prev => [...prev, newItem]);
-        closeModal();
+        
+        // Exibe a senha gerada (ou a informada) em um modal para confirmação/cópia
+        openModal('Usuário Criado', <PasswordDisplay user={newItem} />);
     };
 
     const addLead = async (data: Omit<Lead, 'id' | 'companyId' | 'createdAt' | 'messages'> & { messages?: ChatMessage[] }) => {
@@ -341,8 +351,13 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
 
     // --- Delete Handlers ---
     const deleteGeneric = async (collection: string, id: string, setter: React.Dispatch<React.SetStateAction<any[]>>) => {
-        await api.deleteItem(collection, id);
-        setter(prev => prev.filter(i => i.id !== id));
+        try {
+            await api.deleteItem(collection, id);
+            setter(prev => prev.filter(i => i.id !== id));
+        } catch (error) {
+            console.error(`Error deleting item from ${collection}:`, error);
+            alert("Não foi possível excluir o item. Verifique se o backend suporta esta operação.");
+        }
     };
 
     const deleteClient = (id: string) => deleteGeneric('clients', id, setClients);

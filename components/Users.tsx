@@ -5,12 +5,13 @@ import type { User } from '../types';
 import { useData } from '../context/DataContext';
 
 const UserForm: React.FC<{ 
-    onSave: (user: Omit<User, 'id' | 'password'> | User) => Promise<void>; 
+    onSave: (user: Omit<User, 'id'> | User) => Promise<void>; 
     initialData?: User;
 }> = ({ onSave, initialData }) => {
     const { activeCompanyName, activeCompanyId, currentUser, companies } = useData();
     const [name, setName] = useState(initialData?.name || '');
     const [email, setEmail] = useState(initialData?.email || '');
+    const [password, setPassword] = useState(''); // Senha vazia por padrão
     const [role, setRole] = useState<'Admin' | 'User'>(initialData?.role === 'Admin' ? 'Admin' : 'User');
     
     // Logic for company selection (SuperAdmin only)
@@ -47,17 +48,32 @@ const UserForm: React.FC<{
         }
 
         setIsSaving(true);
-        const userData = { name, email, role, companyId: finalCompanyId };
+        
+        const userData: any = { name, email, role, companyId: finalCompanyId };
+        
+        // Só adiciona a senha se ela foi preenchida
+        if (password.trim()) {
+            userData.password = password;
+        }
+
         if (initialData) {
             await onSave({ ...initialData, ...userData });
         } else {
-            await onSave(userData as any);
+            await onSave(userData);
         }
     };
 
     // Determine displayed company name
+    const getCompanyName = (id?: string) => {
+        if (!id) return '';
+        const found = companies.find(c => c.id === id);
+        if (found) return found.name;
+        // Se não encontrar pelo ID, assume que o ID pode ser o próprio nome (caso de registros simples)
+        return id;
+    };
+
     const displayCompanyName = initialData 
-        ? companies.find(c => c.id === initialData.companyId)?.name || 'Empresa Desconhecida'
+        ? getCompanyName(initialData.companyId)
         : activeCompanyName;
 
     return (
@@ -101,6 +117,18 @@ const UserForm: React.FC<{
             </div>
 
             <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Senha de Acesso</label>
+                <input 
+                    type="text" 
+                    placeholder={initialData ? "Deixe vazio para manter a senha atual" : "Digite uma senha ou deixe vazio para gerar auto"} 
+                    value={password} 
+                    onChange={e => setPassword(e.target.value)} 
+                    className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary" 
+                />
+                {!password && !initialData && <p className="text-xs text-text-secondary mt-1">Uma senha aleatória será gerada se este campo ficar vazio.</p>}
+            </div>
+
+            <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">Permissão de Acesso</label>
                 <select value={role} onChange={e => setRole(e.target.value as any)} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md text-text-primary focus:border-primary">
                     <option value="User">Membro da Equipe (Acesso Padrão)</option>
@@ -123,7 +151,8 @@ const UserForm: React.FC<{
 
 const UserCard: React.FC<{ user: User; onEdit: (user: User) => void; }> = ({ user, onEdit }) => {
     const { companies } = useData();
-    const userCompany = companies.find(c => c.id === user.companyId)?.name;
+    // Tenta encontrar o nome pelo ID, se não encontrar, usa o ID como nome (fallback para registros simples)
+    const userCompany = companies.find(c => c.id === user.companyId)?.name || user.companyId;
 
     const getInitials = (name: string) => {
         return name
