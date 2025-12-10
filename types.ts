@@ -36,6 +36,7 @@ export interface Payment {
     id: string;
     amount: number;
     dueDate: string;
+    paidDate?: string; // Data real do recebimento
     status: 'Pago' | 'Pendente' | 'Atrasado';
 }
 
@@ -56,6 +57,7 @@ export interface Project {
   downPayment: number;
   installments: number;
   currency: Currency;
+  firstPaymentDate?: string; // Nova data escolhida manualmente para o primeiro vencimento
   hasRetainer: boolean;
   retainerValue?: number;
   assignedPartnerIds: string[];

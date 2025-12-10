@@ -2,7 +2,7 @@
 import React from 'react';
 import type { View, User } from '../types';
 import { 
-  HomeIcon, UsersIcon, BriefcaseIcon, FolderIcon,
+  HomeIcon, UsersIcon, BriefcaseIcon, FolderIcon, GlobeAltIcon, 
   CloudIcon, CurrencyDollarIcon, CreditCardIcon, BuildingOfficeIcon, 
   UserPlusIcon, Cog6ToothIcon, LogoutIcon, FunnelIcon, MapPinIcon 
 } from './Icons';
@@ -17,13 +17,13 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveView, onLogout, isOpen, onClose }) => {
-  const allNavItems: { name: View; label?: string; icon: React.ReactElement; adminOnly?: boolean; superAdminHidden?: boolean }[] = [
+  const allNavItems: { name: View; icon: React.ReactElement; adminOnly?: boolean; superAdminHidden?: boolean }[] = [
     { name: 'Dashboard', icon: <HomeIcon /> },
     { name: 'CRM', icon: <FunnelIcon /> },
     { name: 'Captação', icon: <MapPinIcon /> },
     { name: 'Clientes', icon: <UsersIcon /> },
     { name: 'Parceiros', icon: <BriefcaseIcon /> },
-    { name: 'Projetos', label: 'Projetos / Sites', icon: <FolderIcon /> },
+    { name: 'Projetos', icon: <FolderIcon /> },
     { name: 'SaaS', icon: <CloudIcon /> },
     { name: 'Financeiro', icon: <CurrencyDollarIcon /> },
     { name: 'Assinatura', icon: <CreditCardIcon />, superAdminHidden: true },
@@ -65,8 +65,16 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
         transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="p-6 border-b border-white/10 text-center">
-          <h1 className="text-2xl font-bold text-white tracking-wide">Nexus<span className="text-blue-500">Dash</span></h1>
+        {/* Header com Logo e Nome */}
+        <div className="p-6 border-b border-white/10 flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
+             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+             </svg>
+          </div>
+          <h1 className="text-xl font-bold text-white tracking-wide leading-tight">
+            Nexus<br/><span className="text-blue-500">Manager</span>
+          </h1>
         </div>
         
         <div className="flex-1 overflow-y-auto custom-scrollbar py-4 px-3 space-y-1">
@@ -83,7 +91,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
               <span className={`w-6 h-6 mr-3 transition-colors ${activeView === item.name ? 'text-white' : 'text-slate-500 group-hover:text-white'}`}>
                 {item.icon}
               </span>
-              <span className="font-medium">{item.label || item.name}</span>
+              <span className="font-medium">{item.name}</span>
             </button>
           ))}
         </div>

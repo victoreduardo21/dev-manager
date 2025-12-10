@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import type { Project, Currency, ProjectStatus, Activity, ProjectCategory } from '../types';
 import { CURRENCY_SYMBOLS, CURRENCIES, PROJECT_STATUSES } from '../constants';
@@ -20,6 +21,7 @@ const ProjectForm: React.FC<{
         downPayment: '',
         installments: '1',
         currency: 'BRL' as Currency,
+        firstPaymentDate: '', // Novo campo
         hasRetainer: false,
         retainerValue: '',
         assignedPartnerIds: [] as string[],
@@ -40,6 +42,7 @@ const ProjectForm: React.FC<{
                 downPayment: String(initialData.downPayment),
                 installments: String(initialData.installments),
                 retainerValue: String(initialData.retainerValue || ''),
+                firstPaymentDate: initialData.firstPaymentDate || '',
             });
         }
     }, [initialData]);
@@ -78,6 +81,7 @@ const ProjectForm: React.FC<{
             installments: parseInt(String(formData.installments), 10),
             progress: Number(formData.progress),
             retainerValue: parseFloat(String(formData.retainerValue)) || undefined,
+            firstPaymentDate: formData.firstPaymentDate || undefined, // Envia undefined se vazio para usar lógica padrão se necessário
         };
 
         if (initialData) {
@@ -122,12 +126,27 @@ const ProjectForm: React.FC<{
                 <input type="number" name="value" placeholder="Valor Total" value={formData.value} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md" />
                 <input type="number" name="downPayment" placeholder="Valor da Entrada" value={formData.downPayment} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                <input type="number" name="installments" placeholder="Parcelas" value={formData.installments} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md" />
-                <select name="currency" value={formData.currency} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md">
-                    {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+            
+            <div className="p-4 bg-background/30 rounded-lg border border-white/10 space-y-4">
+                <h4 className="font-semibold text-text-secondary text-sm">Configuração de Pagamento</h4>
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-1">
+                         <label className="text-xs text-text-secondary block mb-1">Parcelas</label>
+                         <input type="number" name="installments" placeholder="Qtd." value={formData.installments} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md" />
+                    </div>
+                    <div className="col-span-1">
+                        <label className="text-xs text-text-secondary block mb-1">Moeda</label>
+                        <select name="currency" value={formData.currency} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md">
+                            {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
+                    <div className="col-span-1">
+                         <label className="text-xs text-text-secondary block mb-1 font-bold text-primary">Vencimento 1ª Parcela</label>
+                         <input type="date" name="firstPaymentDate" value={formData.firstPaymentDate} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:border-primary" />
+                    </div>
+                </div>
             </div>
+
             <div className="flex items-center gap-4">
                 <input type="checkbox" name="hasRetainer" id="hasRetainer" checked={formData.hasRetainer} onChange={handleCheckboxChange} className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
                 <label htmlFor="hasRetainer" className="text-sm">Tem mensalidade?</label>

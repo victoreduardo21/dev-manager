@@ -149,7 +149,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const filteredLeads = useMemo(() => filterByCompany(leads), [leads, currentUser, impersonatedCompany]);
     
     // Função aprimorada para gerar cronograma de pagamentos (Inclui Entrada e Parcelas)
-    const generatePaymentSchedule = (totalValue: number, downPayment: number, installments: number, startDate: string): Payment[] => {
+    const generatePaymentSchedule = (totalValue: number, downPayment: number, installments: number, startDate: string, firstPaymentDate?: string): Payment[] => {
         const payments: Payment[] = [];
         const remainingValue = totalValue - downPayment;
 
@@ -158,19 +158,40 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
             payments.push({
                 id: `pay_entry_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
                 amount: downPayment,
-                dueDate: startDate, // Vence na data de início
-                status: 'Pendente' // Assumimos pendente para controle
+                dueDate: startDate, // Vence na data de início (geralmente entrada é imediata)
+                status: 'Pendente' 
             });
         }
 
         // 2. Parcelas
         if (installments > 0 && remainingValue > 0) {
             const installmentAmount = remainingValue / installments;
-            const start = new Date(startDate);
+            
+            // Definição da Data Base para as Parcelas
+            // Se o usuário informou uma data específica para a 1ª parcela, usamos ela.
+            // Se não, usamos a data de início e somamos 1 mês.
+            let baseDate: Date;
+            if (firstPaymentDate) {
+                // Usuário definiu manualmente (ex: 15/05/2025)
+                // Precisamos garantir o fuso horário correto criando a data com 'T12:00:00' para evitar problemas de dia anterior
+                baseDate = new Date(firstPaymentDate + 'T12:00:00'); 
+            } else {
+                // Automático: Data de Início + 1 Mês
+                baseDate = new Date(startDate + 'T12:00:00');
+                baseDate.setMonth(baseDate.getMonth() + 1);
+            }
             
             for (let i = 0; i < installments; i++) {
-                const dueDate = new Date(start);
-                dueDate.setMonth(start.getMonth() + i + 1); // 1º parcela no mês seguinte
+                const dueDate = new Date(baseDate);
+                // Se for manual, a primeira (i=0) é a própria baseDate. A segunda (i=1) é baseDate + 1 mês.
+                // Se for automático, a baseDate já é Start+1, então a lógica de incremento é a mesma.
+                
+                // Se user definiu manual, i=0 não soma mês. Se user não definiu, baseDate já está somada, então i=0 mantém.
+                // Mas espere, se eu setar baseDate = firstPaymentDate, então no loop:
+                // i=0 -> baseDate + 0 meses (Correto, é a 1ª parcela)
+                // i=1 -> baseDate + 1 mês (Correto, é a 2ª parcela)
+                dueDate.setMonth(baseDate.getMonth() + i);
+                
                 payments.push({
                     id: `pay_inst_${Date.now()}_${i + 1}_${Math.random().toString(36).substr(2, 5)}`,
                     amount: parseFloat(installmentAmount.toFixed(2)),
@@ -225,7 +246,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const addProject = async (data: Omit<Project, 'id' | 'payments' | 'status' | 'progress' | 'activities' | 'companyId'>) => {
         if (!activeCompanyId) return;
         
-        const payments = generatePaymentSchedule(data.value, data.downPayment || 0, data.installments, data.startDate);
+        // Passamos a data específica da primeira parcela (se existir) para o gerador
+        const payments = generatePaymentSchedule(data.value, data.downPayment || 0, data.installments, data.startDate, data.firstPaymentDate);
 
         const newItem: Project = { 
             ...data, 
@@ -329,7 +351,17 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         if (found) {
             const updatedProject = {
                 ...found,
-                payments: found.payments.map(pm => pm.id === paymentId ? { ...pm, status: newStatus } : pm)
+                payments: found.payments.map(pm => {
+                    if (pm.id === paymentId) {
+                        return {
+                            ...pm,
+                            status: newStatus,
+                            // Se for marcado como Pago, grava a data/hora atual. Caso contrário, limpa.
+                            paidDate: newStatus === 'Pago' ? new Date().toISOString() : undefined
+                        };
+                    }
+                    return pm;
+                })
             };
             
             await api.updateItem('projects', updatedProject);
