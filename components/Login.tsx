@@ -1,13 +1,23 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeftIcon, CheckBadgeIcon } from './Icons';
 
 interface LoginProps {
   onLogin: (email: string, pass: string) => Promise<boolean>;
   onRegister: (userData: any) => Promise<void>;
+  onBack: () => void;
+  selectedPlan?: string | null;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, onRegister, onBack, selectedPlan }) => {
   const [isLoginView, setIsLoginView] = useState(true);
+  
+  // Se um plano foi passado, muda automaticamente para a tela de registro
+  useEffect(() => {
+      if (selectedPlan) {
+          setIsLoginView(false);
+      }
+  }, [selectedPlan]);
   
   // Login State
   const [email, setEmail] = useState('');
@@ -35,12 +45,10 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
     try {
         const success = await onLogin(email, password);
         if (!success) {
-            // Se onLogin retornar false sem lançar erro (caso raro no novo api.ts, mas possível)
             setError('Email ou senha incorretos.');
         }
     } catch (e: any) {
         console.error(e);
-        // Exibe a mensagem de erro vinda do Google Apps Script
         setError(e.message || 'Erro ao conectar com o servidor.');
     } finally {
         setIsLoading(false);
@@ -58,7 +66,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
 
     setIsLoading(true);
     try {
-        // Envia para o App.tsx -> api.ts
         await onRegister({
             companyName: companyName,
             firstName: firstName,
@@ -66,16 +73,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
             email: regEmail,
             phone: regPhone,
             cpf: regCpf,
-            password: regPassword
+            password: regPassword,
+            plan: selectedPlan || 'Starter' // Envia o plano selecionado ou default
         });
         
         setSuccess('Cadastro realizado com sucesso! Seus dados foram salvos.');
         setIsLoginView(true);
-        // Preenche o login automaticamente para facilitar
         setEmail(regEmail);
         setPassword('');
         
-        // Limpa form de registro
         setFirstName(''); setLastName(''); setRegEmail(''); setRegPhone(''); 
         setRegCpf(''); setRegPassword(''); setConfirmPassword(''); setCompanyName('');
 
@@ -88,24 +94,25 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      {/* Lado Esquerdo - Branding com Efeito de Raio/Luz */}
+    <div className="flex min-h-screen bg-slate-50 relative">
+      
+      {/* Botão Voltar Absoluto */}
+      <button 
+        onClick={onBack}
+        className="absolute top-6 left-6 z-50 flex items-center gap-2 text-white/80 hover:text-white bg-black/20 hover:bg-black/40 px-4 py-2 rounded-full transition-all backdrop-blur-sm lg:text-white lg:bg-white/10 lg:hover:bg-white/20 text-sm font-medium"
+      >
+        <ChevronLeftIcon className="w-4 h-4" />
+        Voltar ao Site
+      </button>
+
+      {/* Lado Esquerdo - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-primary-dark relative overflow-hidden items-center justify-center p-12">
-        
-        {/* Fundo Base - Azul Profundo */}
         <div className="absolute inset-0 bg-[#020617]"></div>
-
-        {/* Efeito de "Raio" / Luz Superior Esquerda */}
         <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] bg-blue-600/20 blur-[120px] rounded-full mix-blend-screen pointer-events-none"></div>
-        
-        {/* Efeito de "Raio" / Luz Central (Branco/Azul Claro) */}
         <div className="absolute top-[10%] left-[10%] w-[40%] h-[40%] bg-white/10 blur-[80px] rounded-full mix-blend-overlay pointer-events-none"></div>
-
-        {/* Efeito de Contraste Inferior Direito */}
         <div className="absolute bottom-0 right-0 w-[60%] h-[60%] bg-blue-900/10 blur-[100px] rounded-full pointer-events-none"></div>
 
         <div className="relative z-10 max-w-lg">
-            {/* Logo Brand */}
             <div className="mb-8 flex items-center gap-4">
                 <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 text-white">
@@ -137,13 +144,13 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
 
       {/* Lado Direito - Formulário */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white text-slate-900 overflow-y-auto">
-        <div className="w-full max-w-md space-y-8">
+        <div className="w-full max-w-md space-y-8 mt-12 lg:mt-0">
             <div className="text-center lg:text-left">
                 <h2 className="text-3xl font-bold tracking-tight text-slate-900">
                     {isLoginView ? 'Acesse sua conta' : 'Crie sua conta'}
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
-                    {isLoginView ? 'Bem-vindo de volta!' : 'Preencha os dados abaixo para começar.'}
+                    {isLoginView ? 'Bem-vindo de volta!' : 'Preencha os dados abaixo para finalizar sua assinatura.'}
                 </p>
             </div>
 
@@ -193,8 +200,21 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
                     </div>
                 </form>
             ) : (
-                /* REGISTER FORM (Campos Exatos) */
+                /* REGISTER FORM */
                 <form className="mt-8 space-y-4" onSubmit={handleRegisterSubmit}>
+                    {/* Visualização do Plano Selecionado */}
+                    {selectedPlan && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3 mb-6">
+                            <div className="bg-blue-600 rounded-full p-1">
+                                <CheckBadgeIcon className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500 uppercase font-bold">Plano Escolhido</p>
+                                <p className="text-lg font-bold text-blue-700">{selectedPlan}</p>
+                            </div>
+                        </div>
+                    )}
+
                     {error && <p className="text-sm text-red-800 text-center bg-red-100 p-3 rounded-lg border border-red-200">{error}</p>}
 
                     <div>
@@ -293,7 +313,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister }) => {
                         disabled={isLoading}
                         className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-bold text-white hover:bg-primary-hover disabled:opacity-50 transition-all shadow-lg shadow-blue-900/20"
                     >
-                        {isLoading ? 'Salvando...' : 'Cadastrar'}
+                        {isLoading ? 'Salvando...' : 'Finalizar Cadastro'}
                     </button>
 
                     <div className="text-center mt-4">

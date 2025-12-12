@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -17,6 +16,7 @@ import Companies from './components/Companies';
 import Subscription from './components/Subscription';
 import AdminSubscriptionManager from './components/AdminSubscriptionManager';
 import LeadGen from './components/LeadGen';
+import LandingPage from './components/LandingPage';
 import { DataProvider } from './context/DataContext';
 import type { View, User, Company } from './types';
 import { api } from './services/api';
@@ -27,12 +27,19 @@ const App: React.FC = () => {
   const [impersonatedCompany, setImpersonatedCompany] = useState<Company | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Estado para controlar a exibição da Landing Page vs Login
+  const [showLanding, setShowLanding] = useState(true);
+  
+  // Novo estado para armazenar o plano selecionado na Landing Page
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   // Tentar restaurar sessão
   useEffect(() => {
     const storedUser = localStorage.getItem('nexus_current_user');
     if (storedUser) {
         setCurrentUser(JSON.parse(storedUser));
+        setShowLanding(false); // Se já estiver logado, pula a landing
     }
     setIsLoading(false);
   }, []);
@@ -43,6 +50,7 @@ const App: React.FC = () => {
         if (user) {
             setCurrentUser(user);
             localStorage.setItem('nexus_current_user', JSON.stringify(user));
+            setShowLanding(false); // Garante que a landing não volte após login
             return true;
         }
         return false;
@@ -52,9 +60,9 @@ const App: React.FC = () => {
     }
   };
 
-  const handleRegister = async (userData: { companyName: string; name: string; email: string; phone: string; cpf: string; password: string }): Promise<void> => {
+  const handleRegister = async (userData: { companyName: string; name: string; email: string; phone: string; cpf: string; password: string, plan?: string }): Promise<void> => {
       // Chama o backend para criar empresa e usuário
-      // Nota: Não fazemos setCurrentUser aqui para forçar o usuário a fazer login após o cadastro
+      // Nota: Incluímos o plano nos dados, embora a API precise ser preparada para receber (por enquanto vai no objeto userData)
       await api.register(userData, userData.companyName);
   };
 
@@ -63,6 +71,8 @@ const App: React.FC = () => {
     setImpersonatedCompany(null);
     setActiveView('Dashboard');
     localStorage.removeItem('nexus_current_user');
+    setShowLanding(true); // Volta para a landing page ao sair
+    setSelectedPlan(null);
   };
 
   const handleImpersonate = (company: Company) => {
@@ -73,6 +83,16 @@ const App: React.FC = () => {
   const handleStopImpersonating = () => {
     setImpersonatedCompany(null);
     setActiveView('Dashboard');
+  };
+  
+  // Função chamada quando o usuário clica em "Começar" ou escolhe um plano na Landing Page
+  const handleEnterApp = (plan?: string) => {
+      if (plan) {
+          setSelectedPlan(plan);
+      } else {
+          setSelectedPlan(null); // Login normal sem plano selecionado
+      }
+      setShowLanding(false);
   };
   
   const renderView = () => {
@@ -98,7 +118,17 @@ const App: React.FC = () => {
   if (isLoading) return <div className="h-screen flex items-center justify-center bg-slate-900 text-white">Carregando...</div>;
 
   if (!currentUser) {
-    return <Login onLogin={handleLogin} onRegister={handleRegister} />;
+    if (showLanding) {
+        return <LandingPage onEnterApp={handleEnterApp} />;
+    }
+    return (
+        <Login 
+            onLogin={handleLogin} 
+            onRegister={handleRegister} 
+            onBack={() => setShowLanding(true)} 
+            selectedPlan={selectedPlan} // Passa o plano selecionado para o Login
+        />
+    );
   }
 
   return (
