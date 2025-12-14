@@ -1,3 +1,4 @@
+
 // Fix: Import React to resolve "Cannot find namespace 'React'" error.
 import React from 'react';
 
@@ -111,6 +112,7 @@ export interface Company {
     currency: Currency;
     subscriptionStatus: SubscriptionStatus;
     subscriptionDueDate: string;
+    plan?: string; // Novo campo para armazenar o nome do plano (Starter, Professional, etc)
     paymentHistory: SubscriptionPayment[];
     savedCard?: {
         last4: string;
@@ -186,7 +188,7 @@ export interface DataContextType {
     updatePaymentStatus: (projectId: string, paymentId: string, newStatus: 'Pago' | 'Pendente' | 'Atrasado') => Promise<void>;
     paySubscription: (companyId: string, cardDetails?: { last4: string; expiry: string; }) => Promise<void>;
     recordSubscriptionPayment: (companyId: string) => Promise<void>;
-    openModal: (title: string, content: React.ReactNode) => void;
+    openModal: (title: string, content: React.ReactNode, maxWidth?: string) => void;
     setActiveView: (view: View) => void;
     sendWhatsAppMessage: (phone: string, message: string) => Promise<boolean>;
 }

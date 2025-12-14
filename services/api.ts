@@ -1,5 +1,4 @@
 
-
 import type { User } from '../types';
 
 // URL do Google Apps Script Web App (Backend)
@@ -63,6 +62,7 @@ export const api = {
             password: userData.password,
             phone: userData.phone,
             cpf: userData.cpf,
+            plan: userData.plan, // Enviando o plano escolhido
             role: 'User'
         };
         return await request('registerUser', payload);

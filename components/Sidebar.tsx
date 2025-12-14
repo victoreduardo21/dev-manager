@@ -1,6 +1,8 @@
 
+
 import React from 'react';
 import type { View, User } from '../types';
+import { useData } from '../context/DataContext';
 import { 
   HomeIcon, UsersIcon, BriefcaseIcon, FolderIcon, GlobeAltIcon, 
   CloudIcon, CurrencyDollarIcon, CreditCardIcon, BuildingOfficeIcon, 
@@ -17,6 +19,11 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveView, onLogout, isOpen, onClose }) => {
+  // Access data context to get company info for plan display
+  const { companies } = useData();
+  const myCompany = companies.find(c => c.id === currentUser.companyId);
+  const currentPlan = myCompany?.plan || 'Starter';
+
   const allNavItems: { name: View; icon: React.ReactElement; adminOnly?: boolean; superAdminHidden?: boolean }[] = [
     { name: 'Dashboard', icon: <HomeIcon /> },
     { name: 'CRM', icon: <FunnelIcon /> },
@@ -50,6 +57,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
       .slice(0, 2)
       .join('')
       .toUpperCase();
+  };
+
+  const getPlanColor = (plan: string) => {
+      switch(plan) {
+          case 'Business': return 'bg-purple-500 text-white';
+          case 'Professional': return 'bg-blue-500 text-white';
+          default: return 'bg-slate-600 text-slate-200';
+      }
   };
 
   return (
@@ -103,7 +118,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
               </div>
               <div className="ml-3 overflow-hidden">
                   <p className="font-semibold text-white text-sm truncate">{currentUser.name}</p>
-                  <p className="text-xs text-slate-400 truncate">{currentUser.email}</p>
+                  <div className={`mt-1 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase w-fit tracking-wider ${getPlanColor(currentPlan)}`}>
+                      {currentPlan}
+                  </div>
               </div>
           </div>
           <button

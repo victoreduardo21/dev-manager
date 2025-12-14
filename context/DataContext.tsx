@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import Modal from '../components/Modal';
 import type { Client, Partner, Project, SaaSProduct, User, Company, Payment, DataContextType, View, SubscriptionPayment, Lead, ChatMessage, WhatsAppConfig } from '../types';
@@ -107,10 +108,12 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalContent, setModalContent] = useState<React.ReactNode | null>(null);
     const [modalTitle, setModalTitle] = useState('');
+    const [modalMaxWidth, setModalMaxWidth] = useState('max-w-md');
 
-    const openModal = (title: string, content: React.ReactNode) => {
+    const openModal = (title: string, content: React.ReactNode, maxWidth: string = 'max-w-md') => {
         setModalTitle(title);
         setModalContent(content);
+        setModalMaxWidth(maxWidth);
         setIsModalOpen(true);
     };
 
@@ -118,6 +121,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         setIsModalOpen(false);
         setModalContent(null);
         setModalTitle('');
+        setModalMaxWidth('max-w-md');
     };
     
     const activeCompanyId = impersonatedCompany?.id || currentUser?.companyId;
@@ -499,7 +503,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     return (
         <DataContext.Provider value={value}>
             {children}
-            <Modal isOpen={isModalOpen} onClose={closeModal} title={modalTitle}>
+            <Modal isOpen={isModalOpen} onClose={closeModal} title={modalTitle} maxWidth={modalMaxWidth}>
                 {modalContent}
             </Modal>
         </DataContext.Provider>
