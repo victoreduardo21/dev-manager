@@ -26,7 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
     { name: 'Projetos', icon: <FolderIcon /> },
     { name: 'SaaS', icon: <CloudIcon /> },
     { name: 'Financeiro', icon: <CurrencyDollarIcon /> },
-    // Removed Assinatura from menu as requested
+    { name: 'Assinatura', icon: <CreditCardIcon />, superAdminHidden: true },
     { name: 'Empresas', icon: <BuildingOfficeIcon />, adminOnly: true },
     { name: 'Gerenciar Assinaturas', icon: <CreditCardIcon />, adminOnly: true },
     { name: 'Usuários', icon: <UserPlusIcon /> },
@@ -43,6 +43,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
     onClose(); // Close sidebar on mobile after navigation
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  };
 
   return (
     <>
@@ -60,14 +68,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
         <div className="p-4 border-b border-white/10 text-center">
           <h1 className="text-2xl font-bold text-white">Nexus Dash</h1>
         </div>
-        <ul className="flex-1 p-2 overflow-y-auto custom-scrollbar">
+        <ul className="flex-1 p-2 overflow-y-auto">
           {navItems.map((item) => (
             <li key={item.name}>
               <button
                 onClick={() => handleLinkClick(item.name)}
                 className={`w-full flex items-center p-3 my-1 rounded-lg text-left transition-colors duration-200 ${
                   activeView === item.name
-                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                    ? 'bg-primary text-white shadow-lg'
                     : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
@@ -79,7 +87,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
         </ul>
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center mb-4">
-              <img src={`https://i.pravatar.cc/40?u=${currentUser.email}`} alt="User Avatar" className="w-10 h-10 rounded-full border border-white/10" />
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold border border-white/10 shadow-sm shrink-0">
+                  {getInitials(currentUser.name)}
+              </div>
               <div className="ml-3 overflow-hidden">
                   <p className="font-semibold text-white truncate">{currentUser.name}</p>
                   <p className="text-sm text-slate-400 truncate">{currentUser.email}</p>
@@ -87,7 +97,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
           </div>
           <button
             onClick={onLogout}
-            className="w-full flex items-center justify-center p-2 rounded-lg text-left transition-colors duration-200 bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/10"
+            className="w-full flex items-center justify-center p-2 rounded-lg text-left transition-colors duration-200 bg-red-500/10 text-red-400 hover:bg-red-500/20"
           >
             <LogoutIcon />
             <span className="ml-2">Sair</span>

@@ -1,4 +1,4 @@
-import React, { ErrorInfo, ReactNode } from "react";
+import React, { Component, type ErrorInfo, type ReactNode } from "react";
 import { ExclamationTriangleIcon } from "./Icons";
 
 interface Props {
@@ -10,7 +10,7 @@ interface State {
   error: Error | null;
 }
 
-class ErrorBoundary extends React.Component<Props, State> {
+class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
     this.state = {
