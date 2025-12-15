@@ -5,125 +5,8 @@ import { CURRENCY_SYMBOLS } from '../constants';
 import PaymentForm from './PaymentForm';
 import { CreditCardIcon, CheckBadgeIcon, RocketLaunchIcon, CurrencyDollarIcon } from './Icons';
 import type { Company } from '../types';
+import UpgradeModal from './UpgradeModal';
 
-// Definição dos Planos Disponíveis
-const PLANS = [
-    {
-        name: 'Starter',
-        price: 97,
-        features: [
-            "CRM de Vendas Básico",
-            "Gestão de até 5 Projetos",
-            "1 Usuário Admin",
-            "Controle Financeiro Simples"
-        ]
-    },
-    {
-        name: 'Professional',
-        price: 197,
-        features: [
-            "CRM de Vendas Ilimitado",
-            "Projetos Ilimitados",
-            "Até 5 Usuários",
-            "Automação WhatsApp API",
-            "Captação de Leads com IA"
-        ],
-        isPopular: true
-    },
-    {
-        name: 'Business',
-        price: 497,
-        features: [
-            "Tudo do Professional",
-            "Usuários Ilimitados",
-            "API Aberta para Integrações",
-            "Gestão Multi-Empresas",
-            "Gerente de Conta Dedicado"
-        ]
-    }
-];
-
-const UpgradeModal: React.FC<{ 
-    currentPlan: string; 
-    onSelectPlan: (planName: string, price: number) => void;
-    onCancel: () => void;
-}> = ({ currentPlan, onSelectPlan, onCancel }) => {
-    return (
-        <div className="w-full">
-            <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-text-primary mb-2">Escolha o plano ideal</h3>
-                <p className="text-text-secondary">Faça o upgrade para desbloquear mais recursos.</p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-                {PLANS.map(plan => {
-                    const isCurrent = plan.name === currentPlan;
-                    
-                    return (
-                        <div 
-                            key={plan.name} 
-                            className={`relative border rounded-xl p-6 flex flex-col justify-between transition-all duration-300 ${
-                                isCurrent 
-                                ? 'border-green-500 bg-green-500/5 ring-1 ring-green-500' 
-                                : plan.isPopular
-                                    ? 'border-blue-500 bg-white shadow-xl transform scale-105 z-10'
-                                    : 'border-white/20 bg-surface hover:border-primary/50'
-                            }`}
-                        >
-                            {plan.isPopular && !isCurrent && (
-                                <div className="absolute top-0 right-0 bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg rounded-tr-lg uppercase tracking-wide">
-                                    Popular
-                                </div>
-                            )}
-                            
-                            {isCurrent && (
-                                <div className="absolute top-0 right-0 bg-green-600 text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg rounded-tr-lg uppercase tracking-wide">
-                                    Atual
-                                </div>
-                            )}
-
-                            <div>
-                                <h4 className={`font-bold text-xl ${isCurrent ? 'text-green-600' : 'text-text-primary'}`}>
-                                    {plan.name}
-                                </h4>
-                                <div className="flex items-baseline gap-1 my-4">
-                                    <span className="text-3xl font-bold text-text-primary">R$ {plan.price}</span>
-                                    <span className="text-sm text-text-secondary">/mês</span>
-                                </div>
-                                <ul className="space-y-3 mb-6">
-                                    {plan.features.map((f, i) => (
-                                        <li key={i} className="text-sm text-text-secondary flex items-start gap-2">
-                                            <CheckBadgeIcon className={`w-4 h-4 shrink-0 mt-0.5 ${isCurrent ? 'text-green-500' : 'text-primary'}`} />
-                                            {f}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            <button 
-                                onClick={() => !isCurrent && onSelectPlan(plan.name, plan.price)}
-                                disabled={isCurrent}
-                                className={`w-full py-3 rounded-lg text-sm font-bold transition-all shadow-md ${
-                                    isCurrent 
-                                    ? 'bg-transparent text-green-600 border border-green-500 cursor-default opacity-80' 
-                                    : 'bg-primary text-white hover:bg-primary-hover hover:-translate-y-1'
-                                }`}
-                            >
-                                {isCurrent ? 'Seu Plano Atual' : 'Selecionar Plano'}
-                            </button>
-                        </div>
-                    );
-                })}
-            </div>
-            
-            <div className="text-center mt-8 pt-4 border-t border-white/10">
-                <button onClick={onCancel} className="text-text-secondary hover:text-text-primary text-sm font-medium px-6 py-2 rounded hover:bg-white/5">
-                    Cancelar
-                </button>
-            </div>
-        </div>
-    );
-};
 
 const Subscription: React.FC = () => {
     const { currentUser, companies, paySubscription, openModal, updateCompany, closeModal } = useData();
@@ -168,10 +51,8 @@ const Subscription: React.FC = () => {
     };
 
     const handleUpgradePlan = async (newPlanName: string, newPrice: number) => {
-        // Fecha o modal de seleção primeiro
         closeModal();
 
-        // Atualiza a empresa
         const updatedCompany: Company = {
             ...myCompany,
             plan: newPlanName,
@@ -180,7 +61,6 @@ const Subscription: React.FC = () => {
         
         await updateCompany(updatedCompany);
         
-        // Abre modal de sucesso
         openModal(
             'Plano Atualizado!', 
             <div className="text-center p-6">
@@ -190,10 +70,11 @@ const Subscription: React.FC = () => {
                 <h3 className="text-xl font-bold text-text-primary mb-2">Parabéns!</h3>
                 <p className="text-text-secondary mb-6">
                     Sua empresa migrou para o plano <span className="text-primary font-bold">{newPlanName}</span> com sucesso.
+                    Novos recursos foram desbloqueados.
                 </p>
                 <button 
                     onClick={() => closeModal()}
-                    className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-hover"
+                    className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-hover font-bold"
                 >
                     Continuar
                 </button>
@@ -203,13 +84,13 @@ const Subscription: React.FC = () => {
 
     const openUpgradeModal = () => {
         openModal(
-            'Mudar de Plano',
+            'Atualize seu Plano',
             <UpgradeModal 
                 currentPlan={currentPlanName} 
-                onSelectPlan={handleUpgradePlan}
+                onConfirm={handleUpgradePlan}
                 onCancel={closeModal}
             />,
-            'max-w-6xl'
+            'max-w-5xl'
         );
     };
 

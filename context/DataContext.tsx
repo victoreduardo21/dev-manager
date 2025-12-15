@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useMemo, useEffect } from '
 import Modal from '../components/Modal';
 import type { Client, Partner, Project, SaaSProduct, User, Company, Payment, DataContextType, View, SubscriptionPayment, Lead, ChatMessage, WhatsAppConfig } from '../types';
 import { api } from '../services/api';
+import { RocketLaunchIcon, LockClosedIcon } from '../components/Icons';
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
@@ -33,6 +34,34 @@ const PasswordDisplay: React.FC<{ user: User }> = ({ user }) => (
     </div>
 );
 
+const RestrictedFeatureModal: React.FC<{ 
+    featureName: string; 
+    currentPlan: string;
+    requiredPlan: string;
+    message: string;
+    onUpgrade: () => void;
+}> = ({ featureName, currentPlan, requiredPlan, message, onUpgrade }) => (
+    <div className="text-center p-6">
+        <div className="w-16 h-16 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-200">
+            <LockClosedIcon className="w-8 h-8" />
+        </div>
+        <h3 className="text-xl font-bold text-text-primary mb-2">Recurso Bloqueado</h3>
+        <p className="text-text-secondary mb-4">
+            A funcionalidade <span className="font-bold text-primary">{featureName}</span> não está disponível no seu plano atual ({currentPlan}).
+        </p>
+        <p className="text-sm text-text-secondary mb-6 bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-md text-yellow-600">
+            {message}
+        </p>
+        <button 
+            onClick={onUpgrade}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2 font-bold animate-pulse"
+        >
+            <RocketLaunchIcon className="w-5 h-5" />
+            Fazer Upgrade para {requiredPlan}
+        </button>
+    </div>
+);
+
 export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initialUser, impersonatedCompany, children, setActiveView }) => {
     const [currentUser, setCurrentUser] = useState<User | null>(initialUser);
 
@@ -42,11 +71,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const [clients, setClients] = useState<Client[]>([]);
     const [partners, setPartners] = useState<Partner[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
-    // const [sites, setSites] = useState<Site[]>([]); // Removed: merged into projects
     const [saasProducts, setSaaSProducts] = useState<SaaSProduct[]>([]);
     const [leads, setLeads] = useState<Lead[]>([]);
     
-    // WhatsApp Configuration State
     const [whatsappConfig, setWhatsappConfigState] = useState<WhatsAppConfig>({
         apiUrl: '',
         apiToken: '',
@@ -54,12 +81,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         isConnected: false
     });
 
-    // Update internal currentUser when prop changes or on init
     useEffect(() => {
         if (initialUser) setCurrentUser(initialUser);
     }, [initialUser]);
 
-    // Carregar Dados do Backend Local ao iniciar
     useEffect(() => {
         const loadData = async () => {
             try {
@@ -70,26 +95,22 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
                     setClients(db.clients || []);
                     setPartners(db.partners || []);
                     
-                    // MERGE STRATEGY: Combine 'Projects' and 'Sites' from DB into a single 'projects' state
-                    // Ensure old 'Sites' have category='Site'
                     const mappedProjects = (db.projects || []).map((p: any) => ({
                         ...p,
-                        category: p.category || 'Sistema' // Default to Sistema if undefined
+                        category: p.category || 'Sistema'
                     }));
 
                     const mappedSites = (db.sites || []).map((s: any) => ({
                         ...s,
-                        category: 'Site' // Explicitly set as Site
+                        category: 'Site'
                     }));
 
                     setProjects([...mappedProjects, ...mappedSites]);
-                    
                     setSaaSProducts(db.saasProducts || []);
                     setLeads(db.leads || []);
                 }
             } catch (error) {
                 console.error("Failed to initialize data context:", error);
-                // Non-blocking error, user might be offline or backend down
             }
         };
         loadData();
@@ -98,7 +119,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         if (storedConfig) {
             setWhatsappConfigState(JSON.parse(storedConfig));
         }
-    }, [currentUser]); // Recarrega se usuário mudar (login/logout)
+    }, [currentUser]);
 
     const setWhatsappConfig = (config: WhatsAppConfig) => {
         setWhatsappConfigState(config);
@@ -129,20 +150,17 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const activeCompanyName = useMemo(() => {
         const found = companies.find(c => c.id === activeCompanyId);
         if (found) return found.name;
-        // Fallback: Se o ID existir e não for encontrado na lista (ex: cadastro recente onde ID = Nome), retorna o ID.
         return activeCompanyId && activeCompanyId.trim() !== '' ? activeCompanyId : 'Empresa';
     }, [companies, activeCompanyId]);
 
     const filterByCompany = <T extends { companyId: string }>(data: T[]): T[] => {
         if (!currentUser) return [];
-        // SuperAdmin vê tudo
         if (currentUser.role === 'SuperAdmin' && !impersonatedCompany) {
              if (data.length > 0 && 'role' in data[0] && 'email' in data[0]) {
                  return (data as unknown as User[]).filter(item => item.companyId === currentUser.companyId) as unknown as T[];
              }
              return data;
         }
-        // Usuários normais veem apenas dados da sua empresa
         return data.filter(item => item.companyId === activeCompanyId);
     };
 
@@ -152,49 +170,120 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const filteredSaaSProducts = useMemo(() => filterByCompany(saasProducts), [saasProducts, currentUser, impersonatedCompany]);
     const filteredUsers = useMemo(() => filterByCompany(users), [users, currentUser, impersonatedCompany]);
     const filteredLeads = useMemo(() => filterByCompany(leads), [leads, currentUser, impersonatedCompany]);
+
+    // --- Plan Restriction Logic ---
+    const checkPlanLimits = (feature: 'projects' | 'users' | 'whatsapp' | 'leadGen' | 'leads'): boolean => {
+        if (currentUser?.role === 'SuperAdmin' && !impersonatedCompany) return true; // SuperAdmin has no limits
+
+        const myCompany = companies.find(c => c.id === activeCompanyId);
+        // Default to PRO if undefined, or handle 'Gratuito' if we implement it. Assuming PRO is base paid.
+        const plan = myCompany?.plan || 'PRO'; 
+
+        let allowed = true;
+        let requiredPlan = '';
+        let message = '';
+        let featureTitle = '';
+
+        if (feature === 'projects') {
+            // PRO: Unlimited Projects
+            // VIP: Unlimited Projects
+            // Gratuito (if exists): Limit 5
+            featureTitle = 'Criar Novo Projeto';
+            if (plan === 'Gratuito' && filteredProjects.length >= 5) {
+                allowed = false;
+                requiredPlan = 'PRO';
+                message = 'A versão gratuita permite gerenciar no máximo 5 projetos. Faça upgrade para o plano PRO.';
+            }
+        } 
+        else if (feature === 'users') {
+            featureTitle = 'Adicionar Usuário';
+            if (plan === 'Gratuito' && filteredUsers.length >= 1) {
+                allowed = false;
+                requiredPlan = 'PRO';
+                message = 'A versão gratuita é individual. Migre para o plano PRO para adicionar até 3 membros.';
+            }
+            else if (plan === 'PRO' && filteredUsers.length >= 3) {
+                // PRO: Até 3 Usuários
+                allowed = false;
+                requiredPlan = 'VIP';
+                message = 'O plano PRO permite até 3 usuários. Para equipes maiores e usuários ilimitados, escolha o plano VIP.';
+            }
+        }
+        else if (feature === 'whatsapp') {
+            featureTitle = 'Automação WhatsApp';
+            if (plan !== 'VIP') {
+                // Exclusive to VIP
+                allowed = false;
+                requiredPlan = 'VIP';
+                message = 'A automação de WhatsApp e API é um recurso exclusivo do plano VIP.';
+            }
+        }
+        else if (feature === 'leadGen') {
+            featureTitle = 'Captação de Leads IA';
+            if (plan !== 'VIP') {
+                // Exclusive to VIP
+                allowed = false;
+                requiredPlan = 'VIP';
+                message = 'A ferramenta de Inteligência Artificial para captação de leads está disponível apenas no plano VIP.';
+            }
+        }
+        else if (feature === 'leads') {
+             // PRO has unlimited leads, so usually no block unless Free plan
+             featureTitle = 'Adicionar Lead';
+             if (plan === 'Gratuito' && filteredLeads.length >= 50) {
+                 allowed = false;
+                 requiredPlan = 'PRO';
+                 message = 'Limite de 50 leads no plano gratuito. Faça upgrade para o PRO para ter CRM ilimitado.';
+             }
+        }
+
+        if (!allowed) {
+            openModal(
+                '', 
+                <RestrictedFeatureModal 
+                    featureName={featureTitle}
+                    currentPlan={plan}
+                    requiredPlan={requiredPlan}
+                    message={message}
+                    onUpgrade={() => {
+                        closeModal();
+                        setActiveView('Assinatura');
+                    }}
+                />
+            );
+            return false;
+        }
+
+        return true;
+    };
+
     
-    // Função aprimorada para gerar cronograma de pagamentos (Inclui Entrada e Parcelas)
+    // Função aprimorada para gerar cronograma de pagamentos
     const generatePaymentSchedule = (totalValue: number, downPayment: number, installments: number, startDate: string, firstPaymentDate?: string): Payment[] => {
         const payments: Payment[] = [];
         const remainingValue = totalValue - downPayment;
 
-        // 1. Entrada (Down Payment)
         if (downPayment > 0) {
             payments.push({
                 id: `pay_entry_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
                 amount: downPayment,
-                dueDate: startDate, // Vence na data de início (geralmente entrada é imediata)
+                dueDate: startDate, 
                 status: 'Pendente' 
             });
         }
 
-        // 2. Parcelas
         if (installments > 0 && remainingValue > 0) {
             const installmentAmount = remainingValue / installments;
-            
-            // Definição da Data Base para as Parcelas
-            // Se o usuário informou uma data específica para a 1ª parcela, usamos ela.
-            // Se não, usamos a data de início e somamos 1 mês.
             let baseDate: Date;
             if (firstPaymentDate) {
-                // Usuário definiu manualmente (ex: 15/05/2025)
-                // Precisamos garantir o fuso horário correto criando a data com 'T12:00:00' para evitar problemas de dia anterior
                 baseDate = new Date(firstPaymentDate + 'T12:00:00'); 
             } else {
-                // Automático: Data de Início + 1 Mês
                 baseDate = new Date(startDate + 'T12:00:00');
                 baseDate.setMonth(baseDate.getMonth() + 1);
             }
             
             for (let i = 0; i < installments; i++) {
                 const dueDate = new Date(baseDate);
-                // Se for manual, a primeira (i=0) é a própria baseDate. A segunda (i=1) é baseDate + 1 mês.
-                // Se for automático, a baseDate já é Start+1, então a lógica de incremento é a mesma.
-                
-                // Se user definiu manual, i=0 não soma mês. Se user não definiu, baseDate já está somada, então i=0 mantém.
-                // Mas espere, se eu setar baseDate = firstPaymentDate, então no loop:
-                // i=0 -> baseDate + 0 meses (Correto, é a 1ª parcela)
-                // i=1 -> baseDate + 1 mês (Correto, é a 2ª parcela)
                 dueDate.setMonth(baseDate.getMonth() + i);
                 
                 payments.push({
@@ -208,8 +297,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         
         return payments;
     };
-
-    // --- Create Handlers (Agora Persistentes) ---
 
     const addCompany = async (data: Omit<Company, 'id' | 'subscriptionDueDate' | 'paymentHistory'> & { adminUser: { name: string; email: string; phone: string } }) => {
         const newCompanyId = `comp-${Date.now()}`;
@@ -250,8 +337,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
 
     const addProject = async (data: Omit<Project, 'id' | 'payments' | 'status' | 'progress' | 'activities' | 'companyId'>) => {
         if (!activeCompanyId) return;
-        
-        // Passamos a data específica da primeira parcela (se existir) para o gerador
         const payments = generatePaymentSchedule(data.value, data.downPayment || 0, data.installments, data.startDate, data.firstPaymentDate);
 
         const newItem: Project = { 
@@ -293,11 +378,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     };
 
     const addUser = async (data: Omit<User, 'id'>) => {
-        // Use provided companyId or fall back to activeCompanyId
         const targetCompanyId = data.companyId || activeCompanyId;
         if (!targetCompanyId) return;
-        
-        // Use password if provided, otherwise generate a random one
         const finalPassword = data.password || Math.random().toString(36).slice(-8);
 
         const newItem: User = { 
@@ -310,8 +392,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         
         await api.saveItem('users', newItem);
         setUsers(prev => [...prev, newItem]);
-        
-        // Exibe a senha gerada (ou a informada) em um modal para confirmação/cópia
         openModal('Usuário Criado', <PasswordDisplay user={newItem} />);
     };
 
@@ -329,8 +409,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         closeModal();
     };
 
-    // --- Update Handlers (Persistentes) ---
-    // Helper para atualizar estado local e DB
+    // --- Update Handlers ---
     const updateGeneric = async (collection: string, item: any, setter: React.Dispatch<React.SetStateAction<any[]>>) => {
         await api.updateItem(collection as any, item);
         setter(prev => prev.map(i => i.id === item.id ? item : i));
@@ -342,14 +421,13 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const updateSaaSProduct = (item: SaaSProduct) => updateGeneric('saasProducts', item, setSaaSProducts).then(closeModal);
     const updateCompany = (item: Company) => updateGeneric('companies', item, setCompanies).then(closeModal);
     const updateUser = (item: User) => updateGeneric('users', item, setUsers).then(() => {
-        // Special case: if we updated the current user, update session state
         if (currentUser && currentUser.id === item.id) {
             setCurrentUser(item);
             localStorage.setItem('nexus_current_user', JSON.stringify(item));
         }
         closeModal();
     });
-    const updateLead = (item: Lead) => updateGeneric('leads', item, setLeads); // Lead não fecha modal auto
+    const updateLead = (item: Lead) => updateGeneric('leads', item, setLeads);
 
     // --- Delete Handlers ---
     const deleteGeneric = async (collection: string, id: string, setter: React.Dispatch<React.SetStateAction<any[]>>) => {
@@ -370,7 +448,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const deleteLead = (id: string) => deleteGeneric('leads', id, setLeads);
 
     const updatePaymentStatus = async (projectId: string, paymentId: string, newStatus: 'Pago' | 'Pendente' | 'Atrasado') => {
-        // Encontrar e atualizar o projeto correto (seja em projects ou sites)
         const found = projects.find(p => p.id === projectId);
         
         if (found) {
@@ -381,7 +458,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
                         return {
                             ...pm,
                             status: newStatus,
-                            // Se for marcado como Pago, grava a data/hora atual. Caso contrário, limpa.
                             paidDate: newStatus === 'Pago' ? new Date().toISOString() : undefined
                         };
                     }
@@ -497,7 +573,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         setActiveView,
         whatsappConfig,
         setWhatsappConfig,
-        sendWhatsAppMessage
+        sendWhatsAppMessage,
+        checkPlanLimits
     };
 
     return (

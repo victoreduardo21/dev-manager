@@ -99,6 +99,7 @@ export interface SubscriptionPayment {
     id: string;
     date: string;
     amount: number;
+    paymentMethod?: string; // Optional info
 }
 
 export interface Company {
@@ -191,4 +192,5 @@ export interface DataContextType {
     openModal: (title: string, content: React.ReactNode, maxWidth?: string) => void;
     setActiveView: (view: View) => void;
     sendWhatsAppMessage: (phone: string, message: string) => Promise<boolean>;
+    checkPlanLimits: (feature: 'projects' | 'users' | 'whatsapp' | 'leadGen') => boolean;
 }

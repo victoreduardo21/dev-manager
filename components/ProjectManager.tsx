@@ -321,7 +321,8 @@ const ProjectManager: React.FC = () => {
   const { 
     projects, clients, 
     addProject, updateProject, deleteProject,
-    openModal 
+    openModal,
+    checkPlanLimits
   } = useData();
   
   const getClientName = (clientId: string) => {
@@ -329,7 +330,9 @@ const ProjectManager: React.FC = () => {
   }
   
   const handleAddClick = () => {
-      openModal(`Adicionar Novo Projeto`, <ProjectForm onSave={addProject} />);
+      if (checkPlanLimits('projects')) {
+          openModal(`Adicionar Novo Projeto`, <ProjectForm onSave={addProject} />);
+      }
   };
 
   const handleEditClick = (project: Project) => {

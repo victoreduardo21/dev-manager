@@ -373,49 +373,34 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
                         <PricingCard 
-                            title="Starter" 
-                            price="R$ 97" 
-                            desc="Ideal para freelancers e profissionais autônomos."
-                            features={[
-                                "CRM de Vendas Básico",
-                                "Gestão de até 5 Projetos",
-                                "1 Usuário Admin",
-                                "Controle Financeiro Simples",
-                                "Sem Automação de WhatsApp"
-                            ]}
-                            onClick={() => onEnterApp('Starter')}
-                        />
-                        <PricingCard 
-                            title="Professional" 
-                            price="R$ 197" 
-                            desc="Perfeito para pequenas agências e equipes em crescimento."
-                            isPopular={true}
+                            title="PRO" 
+                            price="R$ 39,90" 
+                            desc="Ideal para profissionais que buscam crescimento."
                             features={[
                                 "CRM de Vendas Ilimitado",
-                                "Projetos Ilimitados",
-                                "Até 5 Usuários",
-                                "Automação WhatsApp API",
-                                "Captação de Leads com IA",
-                                "Área do Cliente",
-                                "Suporte via Chat"
+                                "Gestão de Projetos Ilimitada",
+                                "Até 3 Usuários",
+                                "Agenda Financeira",
+                                "Relatórios Avançados"
                             ]}
-                            onClick={() => onEnterApp('Professional')}
+                            onClick={() => onEnterApp('PRO')}
                         />
                         <PricingCard 
-                            title="Business" 
-                            price="R$ 497" 
-                            desc="Para grandes operações que precisam de escala."
+                            title="VIP" 
+                            price="R$ 79,90" 
+                            desc="Controle total e automação para sua empresa."
+                            isPopular={true}
                             features={[
-                                "Tudo do Professional",
+                                "Tudo do plano PRO",
                                 "Usuários Ilimitados",
-                                "API Aberta para Integrações",
-                                "Gestão Multi-Empresas (White Label)",
-                                "Gerente de Conta Dedicado",
-                                "Treinamento para Equipe"
+                                "Automação WhatsApp API",
+                                "Captação de Leads com IA",
+                                "Assistente Financeiro IA",
+                                "Prioridade no Suporte"
                             ]}
-                            onClick={() => onEnterApp('Business')}
+                            onClick={() => onEnterApp('VIP')}
                         />
                     </div>
                 </div>
@@ -432,7 +417,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                         onClick={() => scrollToSection('pricing')}
                         className="px-10 py-4 bg-blue-600 text-white rounded-full font-bold text-lg hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/30 transform hover:scale-105"
                     >
-                        Criar Conta Gratuita
+                        Criar Conta
                     </button>
                     <p className="mt-6 text-sm text-slate-400">Não requer cartão de crédito • Cancelamento a qualquer momento</p>
                 </div>

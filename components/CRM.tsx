@@ -1,5 +1,4 @@
 
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import type { Lead, LeadStatus, ChatMessage } from '../types';
@@ -180,10 +179,12 @@ const LeadDetailsModal: React.FC<{
 
 
 const CRM: React.FC = () => {
-    const { leads, addLead, updateLead, openModal } = useData();
+    const { leads, addLead, updateLead, openModal, checkPlanLimits } = useData();
 
     const handleAddClick = () => {
-        openModal('Novo Lead', <LeadDetailsModal onSave={addLead} />);
+        if (checkPlanLimits('leads')) {
+            openModal('Novo Lead', <LeadDetailsModal onSave={addLead} />);
+        }
     };
 
     const handleCardClick = (lead: Lead) => {

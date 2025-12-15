@@ -3,6 +3,8 @@ import React from 'react';
 import { CURRENCY_SYMBOLS } from '../constants';
 import { useData } from '../context/DataContext';
 import { UsersIcon, FolderIcon, BriefcaseIcon, CurrencyDollarIcon, CheckBadgeIcon, RocketLaunchIcon } from './Icons';
+import UpgradeModal from './UpgradeModal';
+import type { Company } from '../types';
 
 // Fix: Correctly type the icon prop to allow className to be passed via React.cloneElement.
 const DashboardCard: React.FC<{ title: string; value: string | number; subtext?: string; icon: React.ReactElement<{ className?: string }>;}> = ({ title, value, subtext, icon }) => (
@@ -19,7 +21,7 @@ const DashboardCard: React.FC<{ title: string; value: string | number; subtext?:
 );
 
 const PlanBanner: React.FC<{ planName: string; onUpgrade: () => void }> = ({ planName, onUpgrade }) => {
-    const isBusiness = planName === 'Business';
+    const isVip = planName === 'VIP';
     
     return (
         <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 p-6 sm:p-8 text-white shadow-xl mb-8 border border-white/10">
@@ -37,13 +39,13 @@ const PlanBanner: React.FC<{ planName: string; onUpgrade: () => void }> = ({ pla
                         Você está no plano <span className="text-blue-300">{planName}</span>
                     </h2>
                     <p className="text-blue-100/80 text-sm max-w-xl">
-                        {isBusiness 
+                        {isVip 
                             ? "Você tem acesso total a todas as funcionalidades do sistema. Aproveite o máximo de produtividade!" 
-                            : "Desbloqueie mais recursos e aumente sua produtividade fazendo um upgrade."}
+                            : "Desbloqueie automação, IA e usuários ilimitados fazendo um upgrade."}
                     </p>
                 </div>
 
-                {!isBusiness ? (
+                {!isVip ? (
                     <button 
                         onClick={onUpgrade}
                         className="group bg-white text-blue-900 px-6 py-3 rounded-lg font-bold shadow-lg hover:bg-blue-50 transition-all flex items-center gap-2 whitespace-nowrap"
@@ -65,11 +67,49 @@ const PlanBanner: React.FC<{ planName: string; onUpgrade: () => void }> = ({ pla
 };
 
 const Dashboard: React.FC = () => {
-    const { projects, clients, partners, saasProducts, currentUser, companies, setActiveView } = useData();
+    const { projects, clients, partners, saasProducts, currentUser, companies, setActiveView, openModal, closeModal, updateCompany } = useData();
     
     // Find User's Company Plan
     const myCompany = companies.find(c => c.id === currentUser?.companyId);
-    const currentPlan = myCompany?.plan || 'Starter';
+    const currentPlan = myCompany?.plan || 'PRO';
+
+    const handleUpgradeClick = () => {
+        if (!myCompany) return;
+
+        openModal(
+            'Atualize seu Plano',
+            <UpgradeModal
+                currentPlan={currentPlan}
+                onConfirm={async (newPlanName, newPrice) => {
+                    // Logic to update company plan
+                    const updatedCompany: Company = {
+                        ...myCompany,
+                        plan: newPlanName,
+                        subscriptionValue: newPrice
+                    };
+                    await updateCompany(updatedCompany);
+                    closeModal();
+                    
+                    // Show success
+                    openModal(
+                        'Plano Atualizado!', 
+                        <div className="text-center p-6">
+                            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <CheckBadgeIcon className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-xl font-bold text-text-primary mb-2">Parabéns!</h3>
+                            <p className="text-text-secondary mb-6">
+                                Sua empresa migrou para o plano <span className="text-primary font-bold">{newPlanName}</span> com sucesso.
+                            </p>
+                            <button onClick={() => closeModal()} className="bg-primary text-white px-6 py-2 rounded-lg font-bold">Continuar</button>
+                        </div>
+                    );
+                }}
+                onCancel={closeModal}
+            />,
+            'max-w-5xl'
+        );
+    };
 
     // projects now contains both Sites and Projects
     const allProjects = projects;
@@ -109,7 +149,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="space-y-8">
         {/* New Plan Banner */}
-        <PlanBanner planName={currentPlan} onUpgrade={() => setActiveView('Assinatura')} />
+        <PlanBanner planName={currentPlan} onUpgrade={handleUpgradeClick} />
 
         <h2 className="text-3xl font-bold text-text-primary">Visão Geral</h2>
         

@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { MapPinIcon, CheckBadgeIcon, PaperAirplaneIcon, ExclamationTriangleIcon } from './Icons';
+import { MapPinIcon, CheckBadgeIcon, PaperAirplaneIcon, ExclamationTriangleIcon, LockClosedIcon } from './Icons';
 import { GoogleGenAI } from "@google/genai";
 
 interface ScrapedLead {
@@ -12,7 +13,7 @@ interface ScrapedLead {
 }
 
 const LeadGen: React.FC = () => {
-    const { addLead, openModal, sendWhatsAppMessage } = useData();
+    const { addLead, openModal, sendWhatsAppMessage, checkPlanLimits } = useData();
     const [keyword, setKeyword] = useState('');
     const [location, setLocation] = useState('');
     const [isSearching, setIsSearching] = useState(false);
@@ -46,6 +47,8 @@ const LeadGen: React.FC = () => {
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!checkPlanLimits('leadGen')) return; // Check limits
+
         if (!keyword || !location) return;
 
         setIsSearching(true);
@@ -273,6 +276,14 @@ const LeadGen: React.FC = () => {
 
     const selectedCount = results.filter(r => r.selected).length;
 
+    // Check plan limits for rendering the lock screen
+    const isLocked = !checkPlanLimits('leadGen'); // This will actually trigger the modal from DataContext, but here we can show a nice lock overlay too.
+    // However, since checkPlanLimits returns boolean and triggers modal side-effect, we should just rely on the button click or render overlay conditionally if we had access to plan data directly here. 
+    // Since checkPlanLimits triggers modal, we will just let it do that on button click, but for better UX, let's also block the UI.
+    // We can't access 'plan' directly from here easily without exposing it in context, but checkPlanLimits is a function.
+    // We will assume that if the user clicks the button and fails, the modal shows. But adding a visual overlay is nicer.
+    // We'll trust the button click protection for now as it's cleaner.
+
     return (
         <div className="flex flex-col relative h-full">
             {/* Modal de Configuração de Mensagem */}
@@ -315,7 +326,18 @@ const LeadGen: React.FC = () => {
                 </h2>
             </div>
 
-            <div className="bg-surface p-4 sm:p-6 rounded-lg shadow-lg border border-white/10 mb-6 shrink-0">
+            <div className="bg-surface p-4 sm:p-6 rounded-lg shadow-lg border border-white/10 mb-6 shrink-0 relative">
+                 {/* Visual Lock Overlay for better UX feedback before clicking */}
+                 <div 
+                     className="absolute inset-0 bg-background/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center rounded-lg cursor-pointer"
+                     style={{ display: checkPlanLimits('leadGen') ? 'none' : 'flex' }}
+                     onClick={() => checkPlanLimits('leadGen')} // Will trigger the modal
+                 >
+                     <LockClosedIcon className="w-12 h-12 text-text-secondary mb-2" />
+                     <p className="font-bold text-text-primary text-lg">Ferramenta Premium</p>
+                     <p className="text-sm text-text-secondary">Disponível no plano Professional</p>
+                 </div>
+
                 <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 items-end">
                     <div className="flex-1 w-full">
                         <label className="block text-sm font-medium text-text-secondary mb-1">Nicho / Setor</label>

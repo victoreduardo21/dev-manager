@@ -1,8 +1,6 @@
 
-
 import React from 'react';
 import type { View, User } from '../types';
-import { useData } from '../context/DataContext';
 import { 
   HomeIcon, UsersIcon, BriefcaseIcon, FolderIcon, GlobeAltIcon, 
   CloudIcon, CurrencyDollarIcon, CreditCardIcon, BuildingOfficeIcon, 
@@ -19,11 +17,6 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveView, onLogout, isOpen, onClose }) => {
-  // Access data context to get company info for plan display
-  const { companies } = useData();
-  const myCompany = companies.find(c => c.id === currentUser.companyId);
-  const currentPlan = myCompany?.plan || 'Starter';
-
   const allNavItems: { name: View; icon: React.ReactElement; adminOnly?: boolean; superAdminHidden?: boolean }[] = [
     { name: 'Dashboard', icon: <HomeIcon /> },
     { name: 'CRM', icon: <FunnelIcon /> },
@@ -33,7 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
     { name: 'Projetos', icon: <FolderIcon /> },
     { name: 'SaaS', icon: <CloudIcon /> },
     { name: 'Financeiro', icon: <CurrencyDollarIcon /> },
-    { name: 'Assinatura', icon: <CreditCardIcon />, superAdminHidden: true },
+    // Removed Assinatura from menu as requested
     { name: 'Empresas', icon: <BuildingOfficeIcon />, adminOnly: true },
     { name: 'Gerenciar Assinaturas', icon: <CreditCardIcon />, adminOnly: true },
     { name: 'Usuários', icon: <UserPlusIcon /> },
@@ -50,22 +43,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
     onClose(); // Close sidebar on mobile after navigation
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase();
-  };
-
-  const getPlanColor = (plan: string) => {
-      switch(plan) {
-          case 'Business': return 'bg-purple-500 text-white';
-          case 'Professional': return 'bg-blue-500 text-white';
-          default: return 'bg-slate-600 text-slate-200';
-      }
-  };
 
   return (
     <>
@@ -80,55 +57,40 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
         transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        {/* Header com Logo e Nome */}
-        <div className="p-6 border-b border-white/10 flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
-             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
-             </svg>
-          </div>
-          <h1 className="text-xl font-bold text-white tracking-wide leading-tight">
-            Nexus<br/><span className="text-blue-500">Manager</span>
-          </h1>
+        <div className="p-4 border-b border-white/10 text-center">
+          <h1 className="text-2xl font-bold text-white">Nexus Dash</h1>
         </div>
-        
-        <div className="flex-1 overflow-y-auto custom-scrollbar py-4 px-3 space-y-1">
+        <ul className="flex-1 p-2 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => (
-            <button
-              key={item.name}
-              onClick={() => handleLinkClick(item.name)}
-              className={`w-full flex items-center p-3 rounded-xl text-left transition-all duration-200 group ${
-                activeView === item.name
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20'
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <span className={`w-6 h-6 mr-3 transition-colors ${activeView === item.name ? 'text-white' : 'text-slate-500 group-hover:text-white'}`}>
-                {item.icon}
-              </span>
-              <span className="font-medium">{item.name}</span>
-            </button>
+            <li key={item.name}>
+              <button
+                onClick={() => handleLinkClick(item.name)}
+                className={`w-full flex items-center p-3 my-1 rounded-lg text-left transition-colors duration-200 ${
+                  activeView === item.name
+                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <span className="w-6 h-6 mr-3">{item.icon}</span>
+                {item.name}
+              </button>
+            </li>
           ))}
-        </div>
-
-        <div className="p-4 border-t border-white/10 bg-black/20">
-          <div className="flex items-center mb-4 p-2 rounded-lg bg-white/5 border border-white/5">
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold border border-white/10 shadow-lg shrink-0">
-                  {getInitials(currentUser.name)}
-              </div>
+        </ul>
+        <div className="p-4 border-t border-white/10">
+          <div className="flex items-center mb-4">
+              <img src={`https://i.pravatar.cc/40?u=${currentUser.email}`} alt="User Avatar" className="w-10 h-10 rounded-full border border-white/10" />
               <div className="ml-3 overflow-hidden">
-                  <p className="font-semibold text-white text-sm truncate">{currentUser.name}</p>
-                  <div className={`mt-1 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase w-fit tracking-wider ${getPlanColor(currentPlan)}`}>
-                      {currentPlan}
-                  </div>
+                  <p className="font-semibold text-white truncate">{currentUser.name}</p>
+                  <p className="text-sm text-slate-400 truncate">{currentUser.email}</p>
               </div>
           </div>
           <button
             onClick={onLogout}
-            className="w-full flex items-center justify-center p-2 rounded-lg text-left transition-colors duration-200 bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20"
+            className="w-full flex items-center justify-center p-2 rounded-lg text-left transition-colors duration-200 bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/10"
           >
             <LogoutIcon />
-            <span className="ml-2 font-medium">Sair do Sistema</span>
+            <span className="ml-2">Sair</span>
           </button>
         </div>
       </nav>

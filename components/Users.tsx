@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import type { User } from '../types';
 import { useData } from '../context/DataContext';
@@ -188,10 +187,12 @@ const UserCard: React.FC<{ user: User; onEdit: (user: User) => void; }> = ({ use
 };
 
 const Users: React.FC = () => {
-  const { users, addUser, updateUser, openModal, activeCompanyName } = useData();
+  const { users, addUser, updateUser, openModal, activeCompanyName, checkPlanLimits } = useData();
   
   const handleAddClick = () => {
-    openModal(`Adicionar Membro`, <UserForm onSave={addUser} />);
+    if (checkPlanLimits('users')) {
+        openModal(`Adicionar Membro`, <UserForm onSave={addUser} />);
+    }
   };
 
   const handleEditClick = (user: User) => {

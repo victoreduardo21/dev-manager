@@ -9,3 +9,36 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
     USD: '$',
     EUR: '€',
 };
+
+export const PLANS = [
+    {
+        name: 'PRO',
+        price: 39.90,
+        description: 'Ideal para profissionais que buscam crescimento.',
+        features: [
+            "CRM de Vendas Ilimitado",
+            "Gestão de Projetos Ilimitada",
+            "Até 3 Usuários",
+            "Agenda Financeira",
+            "Relatórios Avançados",
+            "Sem Automação de WhatsApp"
+        ],
+        highlight: true,
+        tag: 'Recomendado'
+    },
+    {
+        name: 'VIP',
+        price: 79.90,
+        description: 'Controle total e automação para sua empresa.',
+        features: [
+            "Tudo do plano PRO",
+            "Usuários Ilimitados",
+            "Automação WhatsApp API",
+            "Captação de Leads com IA",
+            "Assistente Financeiro IA",
+            "Prioridade no Suporte"
+        ],
+        highlight: false,
+        tag: 'Exclusivo'
+    }
+];
