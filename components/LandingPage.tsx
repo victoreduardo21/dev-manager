@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { 
     ChartBarIcon, UsersIcon, FolderIcon, PhoneIcon, CheckBadgeIcon, 
-    CloudIcon, ChevronRightIcon, FunnelIcon, CurrencyDollarIcon, Logo
+    CloudIcon, ChevronRightIcon, FunnelIcon, CurrencyDollarIcon
 } from './Icons';
 import type { BillingCycle } from '../types';
 
@@ -25,8 +25,8 @@ const SystemDashboardMockup = () => (
             {/* Fake Sidebar */}
             <div className="w-16 md:w-56 bg-[#020617] p-4 flex flex-col gap-4 text-slate-400 border-r border-slate-800">
                 <div className="h-8 w-8 md:w-auto bg-blue-600 rounded-lg mb-4 flex items-center justify-center text-white font-bold">
-                    <Logo className="w-6 h-6 text-white" />
                     <span className="hidden md:inline ml-2">Nexus</span>
+                    <span className="md:hidden">N</span>
                 </div>
                 <div className="h-2 w-full bg-slate-800 rounded opacity-20 mb-2"></div>
                 <div className="space-y-3">
@@ -183,7 +183,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
     const scrollToSection = (id: string) => {
         const element = document.getElementById(id);
         if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Ajuste de offset para não ficar escondido atrás da navbar fixa
+            const y = element.getBoundingClientRect().top + window.pageYOffset - 100;
+            window.scrollTo({ top: y, behavior: 'smooth' });
         }
     };
 
@@ -194,8 +196,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                 <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
                     <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                         <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                            {/* Logo Atualizada */}
-                            <Logo className="w-6 h-6 text-white" />
+                            {/* Logo Atualizada (System Icon) */}
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+                            </svg>
                         </div>
                         <span className="text-2xl font-bold tracking-tight text-slate-900">Nexus<span className="text-blue-600">Manager</span></span>
                     </div>
@@ -252,13 +256,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                         >
                             Escolher meu Plano <ChevronRightIcon className="w-5 h-5" />
                         </button>
-                        <button className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-bold text-lg transition-all shadow-sm">
+                        <button 
+                            onClick={() => scrollToSection('demo-preview')}
+                            className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-bold text-lg transition-all shadow-sm"
+                        >
                             Ver Demonstração
                         </button>
                     </div>
 
                     {/* Dashboard Preview Mockup (Visual do Sistema) */}
-                    <div className="mt-20 relative mx-auto max-w-6xl">
+                    <div id="demo-preview" className="mt-20 relative mx-auto max-w-6xl scroll-mt-28">
                         <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl blur-lg opacity-20"></div>
                         <SystemDashboardMockup />
                     </div>
@@ -447,7 +454,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                         <div className="flex items-center gap-2 mb-4 text-white">
                             {/* Logo Footer Atualizada */}
                             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                <Logo className="w-6 h-6 text-white" />
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-white">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+                                </svg>
                             </div>
                             <span className="text-xl font-bold">Nexus Manager</span>
                         </div>

@@ -13,7 +13,7 @@ interface ScrapedLead {
 }
 
 const LeadGen: React.FC = () => {
-    const { addLead, openModal, sendWhatsAppMessage, checkPlanLimits } = useData();
+    const { addLead, openModal, sendWhatsAppMessage } = useData();
     const [keyword, setKeyword] = useState('');
     const [location, setLocation] = useState('');
     const [isSearching, setIsSearching] = useState(false);
@@ -47,7 +47,6 @@ const LeadGen: React.FC = () => {
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!checkPlanLimits('leadGen')) return; // Check limits
 
         if (!keyword || !location) return;
 
@@ -64,12 +63,12 @@ const LeadGen: React.FC = () => {
                 "U, V, W, X, Y, Z"
             ];
 
-            let accumulatedLeads: ScrapedLead[] = [];
             const uniquePhones = new Set();
             let languageDetected = false;
 
             for (let i = 0; i < letterBatches.length; i++) { 
-                setStatusMessage(`Buscando empresas de ${letterBatches[i].split(',')[0]} a ${letterBatches[i].split(',').pop()}... (${accumulatedLeads.length} encontrados)`);
+                // Only update status message, do not reset results every iteration to save renders
+                setStatusMessage(`Buscando empresas de ${letterBatches[i].split(',')[0]} a ${letterBatches[i].split(',').pop()}...`);
                 
                 const prompt = `
                     Act as a data scraper. I need real business leads for: "${keyword}" in "${location}".
@@ -96,6 +95,8 @@ const LeadGen: React.FC = () => {
                     const textResponse = await callGeminiDirect(prompt);
                     const lines = textResponse.split('\n');
                     
+                    const newLeads: ScrapedLead[] = [];
+
                     for (const line of lines) {
                         if (line.includes('|')) {
                             const parts = line.split('|').map(p => p.trim());
@@ -137,7 +138,7 @@ const LeadGen: React.FC = () => {
                                     }
 
                                     uniquePhones.add(digitsOnly);
-                                    accumulatedLeads.push({
+                                    newLeads.push({
                                         id: `lead-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                                         name: name,
                                         phone: phone, // Agora limpo: ex "13 3219-5915"
@@ -149,8 +150,12 @@ const LeadGen: React.FC = () => {
                         }
                     }
                     
-                    setResults([...accumulatedLeads]);
-                    // Pequeno delay para evitar rate limit
+                    // Optimization: Update results only once per batch using functional update
+                    if (newLeads.length > 0) {
+                        setResults(prev => [...prev, ...newLeads]);
+                    }
+                    
+                    // Pequeno delay para evitar rate limit e dar tempo da UI renderizar
                     await new Promise(r => setTimeout(r, 1000)); 
 
                 } catch (err: any) {
@@ -158,11 +163,7 @@ const LeadGen: React.FC = () => {
                 }
             }
             
-            if (accumulatedLeads.length === 0) {
-                setStatusMessage('Nenhum resultado encontrado. Tente outra região ou termo.');
-            } else {
-                setStatusMessage(`Busca concluída! ${accumulatedLeads.length} leads únicos encontrados.`);
-            }
+            setStatusMessage(`Busca concluída! Verifique os resultados abaixo.`);
 
         } catch (error) {
             console.error("Critical Search Error:", error);
@@ -276,14 +277,6 @@ const LeadGen: React.FC = () => {
 
     const selectedCount = results.filter(r => r.selected).length;
 
-    // Check plan limits for rendering the lock screen
-    const isLocked = !checkPlanLimits('leadGen'); // This will actually trigger the modal from DataContext, but here we can show a nice lock overlay too.
-    // However, since checkPlanLimits returns boolean and triggers modal side-effect, we should just rely on the button click or render overlay conditionally if we had access to plan data directly here. 
-    // Since checkPlanLimits triggers modal, we will just let it do that on button click, but for better UX, let's also block the UI.
-    // We can't access 'plan' directly from here easily without exposing it in context, but checkPlanLimits is a function.
-    // We will assume that if the user clicks the button and fails, the modal shows. But adding a visual overlay is nicer.
-    // We'll trust the button click protection for now as it's cleaner.
-
     return (
         <div className="flex flex-col relative h-full">
             {/* Modal de Configuração de Mensagem */}
@@ -327,17 +320,6 @@ const LeadGen: React.FC = () => {
             </div>
 
             <div className="bg-surface p-4 sm:p-6 rounded-lg shadow-lg border border-white/10 mb-6 shrink-0 relative">
-                 {/* Visual Lock Overlay for better UX feedback before clicking */}
-                 <div 
-                     className="absolute inset-0 bg-background/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center rounded-lg cursor-pointer"
-                     style={{ display: checkPlanLimits('leadGen') ? 'none' : 'flex' }}
-                     onClick={() => checkPlanLimits('leadGen')} // Will trigger the modal
-                 >
-                     <LockClosedIcon className="w-12 h-12 text-text-secondary mb-2" />
-                     <p className="font-bold text-text-primary text-lg">Ferramenta Premium</p>
-                     <p className="text-sm text-text-secondary">Disponível no plano Professional</p>
-                 </div>
-
                 <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 items-end">
                     <div className="flex-1 w-full">
                         <label className="block text-sm font-medium text-text-secondary mb-1">Nicho / Setor</label>

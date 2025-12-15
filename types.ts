@@ -192,7 +192,8 @@ export interface DataContextType {
     paySubscription: (companyId: string, cardDetails?: { last4: string; expiry: string; }) => Promise<void>;
     recordSubscriptionPayment: (companyId: string) => Promise<void>;
     openModal: (title: string, content: React.ReactNode, maxWidth?: string) => void;
+    closeModal: () => void;
     setActiveView: (view: View) => void;
     sendWhatsAppMessage: (phone: string, message: string) => Promise<boolean>;
-    checkPlanLimits: (feature: 'projects' | 'users' | 'whatsapp' | 'leadGen') => boolean;
+    checkPlanLimits: (feature: 'projects' | 'users' | 'whatsapp' | 'leadGen' | 'leads') => boolean;
 }

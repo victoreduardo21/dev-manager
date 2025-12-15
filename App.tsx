@@ -13,9 +13,9 @@ import Login from './components/Login';
 import ErrorBoundary from './components/ErrorBoundary';
 import CRM from './components/CRM';
 import Companies from './components/Companies';
+import LeadGen from './components/LeadGen';
 import Subscription from './components/Subscription';
 import AdminSubscriptionManager from './components/AdminSubscriptionManager';
-import LeadGen from './components/LeadGen';
 import LandingPage from './components/LandingPage';
 import { DataProvider } from './context/DataContext';
 import type { View, User, Company, BillingCycle } from './types';
@@ -27,20 +27,22 @@ const App: React.FC = () => {
   const [impersonatedCompany, setImpersonatedCompany] = useState<Company | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Estado para controlar navegação entre Landing Page e Login
+  const [showLogin, setShowLogin] = useState(false);
   
-  // Estado para controlar a exibição da Landing Page vs Login
-  const [showLanding, setShowLanding] = useState(true);
+  // Estado para armazenar o plano e ciclo selecionado no site
+  const [selectedPlan, setSelectedPlan] = useState<string>('Starter');
+  const [selectedCycle, setSelectedCycle] = useState<BillingCycle>('monthly');
   
-  // Novo estado para armazenar o plano selecionado e o ciclo de cobrança na Landing Page
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [selectedBillingCycle, setSelectedBillingCycle] = useState<BillingCycle>('monthly');
+  // Estado para controlar se abre Login ou Cadastro (register)
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
   // Tentar restaurar sessão
   useEffect(() => {
     const storedUser = localStorage.getItem('nexus_current_user');
     if (storedUser) {
         setCurrentUser(JSON.parse(storedUser));
-        setShowLanding(false); // Se já estiver logado, pula a landing
     }
     setIsLoading(false);
   }, []);
@@ -51,7 +53,6 @@ const App: React.FC = () => {
         if (user) {
             setCurrentUser(user);
             localStorage.setItem('nexus_current_user', JSON.stringify(user));
-            setShowLanding(false); // Garante que a landing não volte após login
             return true;
         }
         return false;
@@ -61,19 +62,21 @@ const App: React.FC = () => {
     }
   };
 
-  const handleRegister = async (userData: { companyName: string; name: string; email: string; phone: string; cpf: string; password: string, plan?: string, billingCycle?: BillingCycle }): Promise<void> => {
-      // Chama o backend para criar empresa e usuário
-      // Nota: Incluímos o plano e ciclo nos dados
-      await api.register(userData, userData.companyName);
+  const handleRegister = async (userData: any): Promise<void> => {
+      // Chama o backend para criar empresa e usuário, injetando o plano e ciclo selecionado
+      await api.register({ 
+          ...userData, 
+          plan: selectedPlan,
+          billingCycle: selectedCycle
+      }, userData.companyName);
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
     setImpersonatedCompany(null);
     setActiveView('Dashboard');
+    setShowLogin(false); // Volta para o site ao sair
     localStorage.removeItem('nexus_current_user');
-    setShowLanding(true); // Volta para a landing page ao sair
-    setSelectedPlan(null);
   };
 
   const handleImpersonate = (company: Company) => {
@@ -86,17 +89,6 @@ const App: React.FC = () => {
     setActiveView('Dashboard');
   };
   
-  // Função chamada quando o usuário clica em "Começar" ou escolhe um plano na Landing Page
-  const handleEnterApp = (plan?: string, cycle: BillingCycle = 'monthly') => {
-      if (plan) {
-          setSelectedPlan(plan);
-          setSelectedBillingCycle(cycle);
-      } else {
-          setSelectedPlan(null); // Login normal sem plano selecionado
-      }
-      setShowLanding(false);
-  };
-  
   const renderView = () => {
     switch (activeView) {
       case 'Dashboard': return <Dashboard />;
@@ -105,7 +97,6 @@ const App: React.FC = () => {
       case 'Clientes': return <Clients />;
       case 'Parceiros': return <Partners />;
       case 'Projetos': return <ProjectManager />;
-      // Case 'Sites' removed
       case 'SaaS': return <SaaS />;
       case 'Financeiro': return <Financials />;
       case 'Empresas': return <Companies onImpersonate={handleImpersonate} />;
@@ -120,16 +111,30 @@ const App: React.FC = () => {
   if (isLoading) return <div className="h-screen flex items-center justify-center bg-slate-900 text-white">Carregando...</div>;
 
   if (!currentUser) {
-    if (showLanding) {
-        return <LandingPage onEnterApp={handleEnterApp} />;
+    if (showLogin) {
+        return (
+            <Login 
+                onLogin={handleLogin} 
+                onRegister={handleRegister} 
+                onBack={() => setShowLogin(false)}
+                initialView={authMode} // Passa o modo (login ou register)
+                selectedPlan={selectedPlan}
+                billingCycle={selectedCycle}
+            />
+        );
     }
     return (
-        <Login 
-            onLogin={handleLogin} 
-            onRegister={handleRegister} 
-            onBack={() => setShowLanding(true)} 
-            selectedPlan={selectedPlan} // Passa o plano selecionado para o Login
-            selectedBillingCycle={selectedBillingCycle}
+        <LandingPage 
+            onEnterApp={(plan, cycle) => {
+                if (plan) {
+                    setSelectedPlan(plan);
+                    if (cycle) setSelectedCycle(cycle);
+                    setAuthMode('register'); // Se tem plano, vai para cadastro
+                } else {
+                    setAuthMode('login'); // Se não tem plano, vai para login
+                }
+                setShowLogin(true);
+            }} 
         />
     );
   }

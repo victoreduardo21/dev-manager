@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import type { Project, Payment } from '../types';
 import { CURRENCY_SYMBOLS } from '../constants';
@@ -266,23 +267,6 @@ export default function Financials() {
     return clients.find(c => c.id === clientId)?.name || 'N/A';
   }
 
-  // availableYears lógica mantida caso precise para outros filtros futuros, 
-  // mas o novo picker gerencia o "viewYear" internamente.
-  const availableYears = useMemo(() => {
-    const years = new Set<number>();
-    const currentYear = new Date().getFullYear();
-    for (let i = currentYear; i <= 2030; i++) {
-        years.add(i);
-    }
-    allProjects.forEach(p => {
-        p.payments.forEach(pay => {
-            const date = pay.status === 'Pago' && pay.paidDate ? new Date(pay.paidDate) : new Date(pay.dueDate);
-            years.add(date.getFullYear());
-        });
-    });
-    return Array.from(years).sort((a, b) => b - a);
-  }, [allProjects]);
-
   const financialData = useMemo(() => {
       const monthsLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
       const monthlyStats = monthsLabels.map((m, idx) => ({ month: m, value: 0, projected: 0, index: idx }));
@@ -300,22 +284,24 @@ export default function Financials() {
           parentItem.payments.forEach(payment => {
             let effectiveDate: Date;
             
-            // Lógica de Data Efetiva: Se pago, usa data do pagamento. Se não, usa vencimento.
-            if (payment.status === 'Pago' && payment.paidDate) {
-                // Ajuste para garantir que strings ISO sejam lidas corretamente no fuso local
-                const [y, m, d] = payment.paidDate.split('T')[0].split('-').map(Number);
-                effectiveDate = new Date(y, m - 1, d);
-            } else {
-                const [y, m, d] = payment.dueDate.split('-').map(Number);
-                effectiveDate = new Date(y, m - 1, d);
-            }
+            // CORREÇÃO CRÍTICA DE DATA:
+            // O backend retorna 'YYYY-MM-DD'. Se usarmos new Date('YYYY-MM-DD'), ele considera UTC.
+            // Se o browser estiver em GMT-3, ele volta um dia (ex: dia 01 vira 31 do mês anterior).
+            // Solução: Quebrar a string e criar a data localmente às 12:00.
+            
+            const dateString = payment.status === 'Pago' && payment.paidDate ? payment.paidDate : payment.dueDate;
+            if (!dateString) return;
 
-            const monthIdx = effectiveDate.getMonth();
-            const year = effectiveDate.getFullYear();
+            const [yStr, mStr, dStr] = dateString.split('T')[0].split('-');
+            const year = parseInt(yStr);
+            const monthIdx = parseInt(mStr) - 1; // 0-indexed
+            const day = parseInt(dStr);
 
+            // Filtro de Ano
             const isYearMatch = selectedYear === 'all' || year === selectedYear;
 
             if (isYearMatch) {
+                // Soma no Gráfico (Mês correspondente)
                 if (payment.status === 'Pago') {
                     monthlyStats[monthIdx].value += payment.amount;
                     yearlyRevenue += payment.amount;
@@ -323,6 +309,7 @@ export default function Financials() {
                 
                 monthlyStats[monthIdx].projected += payment.amount;
 
+                // Filtro de Mês para os Cards e Lista
                 const isMonthMatch = selectedMonth === 'all' || monthIdx === selectedMonth;
 
                 if (isMonthMatch) {
@@ -337,24 +324,15 @@ export default function Financials() {
       });
 
       filteredPaymentsList.sort((a, b) => {
-          const dateA = a.payment.status === 'Pago' && a.payment.paidDate ? new Date(a.payment.paidDate) : new Date(a.payment.dueDate);
-          const dateB = b.payment.status === 'Pago' && b.payment.paidDate ? new Date(b.payment.paidDate) : new Date(b.payment.dueDate);
-          return dateA.getTime() - dateB.getTime();
+          return new Date(a.payment.dueDate).getTime() - new Date(b.payment.dueDate).getTime();
       });
-
-      const projectRetainers = allProjects.reduce((acc, p) => {
-          if (p.hasRetainer && p.retainerValue) {
-              return acc + Number(p.retainerValue);
-          }
-          return acc;
-      }, 0);
 
       const saasMRR = saasProducts.reduce((acc, p) => {
           return acc + p.plans.reduce((sum, plan) => sum + (plan.price * plan.customerCount), 0);
       }, 0);
       
-      const rawMRR = projectRetainers + saasMRR;
-      const totalMRR = Math.round((rawMRR + Number.EPSILON) * 100) / 100;
+      // MRR agora considera APENAS SaaS, pois mensalidade de projeto já está nas parcelas
+      const totalMRR = Math.round((saasMRR + Number.EPSILON) * 100) / 100;
 
       const currentMonth = new Date().getMonth();
       const monthsElapsed = selectedYear === new Date().getFullYear() ? currentMonth + 1 : 12;
@@ -384,7 +362,6 @@ export default function Financials() {
             <p className="text-text-secondary">Visão geral de faturamento e fluxo de caixa.</p>
           </div>
           
-          {/* Novo Componente de Filtro */}
           <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
               <MonthYearPicker 
                 selectedMonth={selectedMonth}
@@ -417,7 +394,7 @@ export default function Financials() {
             value={formatMoney(financialData.totalMRR)} 
             icon={<CloudIcon className="w-6 h-6"/>}
             colorClass="text-blue-400"
-            trend="SaaS + Retainers Ativos"
+            trend="Apenas SaaS"
           />
           <KPICard 
             title="A Receber (Pendente)" 

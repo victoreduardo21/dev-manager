@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { PhoneIcon, CheckBadgeIcon, CloudIcon, LockClosedIcon } from './Icons';
+import { PhoneIcon, CheckBadgeIcon, CloudIcon } from './Icons';
 
 // ==================================================================================
 // 🔧 CONFIGURAÇÃO DO WHATSAPP (Preencha seus dados aqui diretamente no código)
@@ -31,7 +31,7 @@ const ToggleSwitch: React.FC<{ enabled: boolean, setEnabled: (enabled: boolean) 
 );
 
 const Settings: React.FC = () => {
-    const { currentUser, updateUser, whatsappConfig, setWhatsappConfig, checkPlanLimits } = useData();
+    const { currentUser, updateUser, whatsappConfig, setWhatsappConfig } = useData();
     const [emailNotifications, setEmailNotifications] = useState(true);
     
     // State for user profile fields
@@ -105,8 +105,6 @@ const Settings: React.FC = () => {
     };
 
     const connectWhatsApp = async () => {
-        if (!checkPlanLimits('whatsapp')) return; // Check permissions
-
         setWaLoading(true);
         setQrCode(null);
         setSuccessMsg('');
@@ -157,7 +155,6 @@ const Settings: React.FC = () => {
     };
 
     const checkConnectionStatus = async () => {
-        if (!checkPlanLimits('whatsapp')) return; // Check permissions
         if (!WA_CONFIG.apiUrl) return;
         setWaLoading(true);
         try {
@@ -188,7 +185,6 @@ const Settings: React.FC = () => {
     };
 
     const disconnectWhatsApp = async () => {
-        if (!checkPlanLimits('whatsapp')) return; // Check permissions
         if (!confirm('Tem certeza que deseja desconectar?')) return;
         setWaLoading(true);
         try {
@@ -315,17 +311,6 @@ const Settings: React.FC = () => {
                     )}
                 </div>
             </div>
-            
-             {/* LOCK OVERLAY FOR STARTER PLAN */}
-             <div 
-                 className="absolute inset-0 bg-background/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center cursor-not-allowed"
-                 onClick={() => checkPlanLimits('whatsapp')}
-                 style={{ display: checkPlanLimits('whatsapp') ? 'none' : 'flex' }}
-             >
-                 <LockClosedIcon className="w-12 h-12 text-text-secondary mb-2" />
-                 <p className="font-bold text-text-primary text-lg">Recurso Bloqueado</p>
-                 <p className="text-sm text-text-secondary">Disponível no plano Professional</p>
-             </div>
         </div>
 
         {/* === CARD PERFIL === */}

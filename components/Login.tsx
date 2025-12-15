@@ -1,25 +1,32 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeftIcon, CheckBadgeIcon, Logo } from './Icons';
+import { ChevronLeftIcon, CheckBadgeIcon } from './Icons';
+import { PLANS } from '../constants';
 import type { BillingCycle } from '../types';
 
 interface LoginProps {
   onLogin: (email: string, pass: string) => Promise<boolean>;
   onRegister: (userData: any) => Promise<void>;
   onBack: () => void;
-  selectedPlan?: string | null;
-  selectedBillingCycle?: BillingCycle;
+  initialView?: 'login' | 'register';
+  selectedPlan?: string;
+  billingCycle?: BillingCycle;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, onRegister, onBack, selectedPlan, selectedBillingCycle = 'monthly' }) => {
-  const [isLoginView, setIsLoginView] = useState(true);
+const Login: React.FC<LoginProps> = ({ 
+    onLogin, 
+    onRegister, 
+    onBack, 
+    initialView = 'login',
+    selectedPlan = 'Starter',
+    billingCycle = 'monthly'
+}) => {
+  const [isLoginView, setIsLoginView] = useState(initialView === 'login');
   
-  // Se um plano foi passado, muda automaticamente para a tela de registro
+  // Atualiza a visualização se a prop mudar
   useEffect(() => {
-      if (selectedPlan) {
-          setIsLoginView(false);
-      }
-  }, [selectedPlan]);
+      setIsLoginView(initialView === 'login');
+  }, [initialView]);
   
   // Login State
   const [email, setEmail] = useState('');
@@ -38,6 +45,12 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister, onBack, selectedPlan
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Dados do plano selecionado
+  const planDetails = PLANS.find(p => p.name === selectedPlan);
+  const planPrice = planDetails 
+      ? (billingCycle === 'yearly' ? planDetails.price.yearly : planDetails.price.monthly) 
+      : 0;
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,8 +89,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister, onBack, selectedPlan
             phone: regPhone,
             cpf: regCpf,
             password: regPassword,
-            plan: selectedPlan || 'Starter', // Envia o plano selecionado ou default
-            billingCycle: selectedBillingCycle
         });
         
         setSuccess('Cadastro realizado com sucesso! Seus dados foram salvos.');
@@ -110,15 +121,16 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister, onBack, selectedPlan
 
       {/* Lado Esquerdo - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-primary-dark relative overflow-hidden items-center justify-center p-12">
-        <div className="absolute inset-0 bg-[#020617]"></div>
+        <div className="absolute inset-0 bg-[#020617] bg-[radial-gradient(#1e3a8a_1px,transparent_1px)] [background-size:20px_20px] opacity-10"></div>
         <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] bg-blue-600/20 blur-[120px] rounded-full mix-blend-screen pointer-events-none"></div>
-        <div className="absolute top-[10%] left-[10%] w-[40%] h-[40%] bg-white/10 blur-[80px] rounded-full mix-blend-overlay pointer-events-none"></div>
         <div className="absolute bottom-0 right-0 w-[60%] h-[60%] bg-blue-900/10 blur-[100px] rounded-full pointer-events-none"></div>
 
         <div className="relative z-10 max-w-lg">
             <div className="mb-8 flex items-center gap-4">
                 <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-                    <Logo className="w-8 h-8 text-white" />
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 text-white">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+                    </svg>
                 </div>
                 <span className="text-3xl font-bold text-white tracking-wide">Nexus Manager</span>
             </div>
@@ -130,16 +142,6 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister, onBack, selectedPlan
                 Controle total de projetos, finanças e equipe em um único lugar. 
                 Otimize seu fluxo de trabalho sem complicações.
             </p>
-            <div className="flex gap-4">
-                <div className="bg-white/5 backdrop-blur-md p-4 rounded-lg border border-white/10 shadow-xl">
-                    <p className="font-bold text-2xl text-white">100%</p>
-                    <p className="text-sm text-blue-200">Controle</p>
-                </div>
-                <div className="bg-white/5 backdrop-blur-md p-4 rounded-lg border border-white/10 shadow-xl">
-                    <p className="font-bold text-2xl text-blue-300">Online</p>
-                    <p className="text-sm text-blue-200">Em tempo real</p>
-                </div>
-            </div>
         </div>
       </div>
 
@@ -151,7 +153,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister, onBack, selectedPlan
                     {isLoginView ? 'Acesse sua conta' : 'Crie sua conta'}
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
-                    {isLoginView ? 'Bem-vindo de volta!' : 'Preencha os dados abaixo para finalizar sua assinatura.'}
+                    {isLoginView ? 'Bem-vindo de volta!' : 'Preencha os dados abaixo para começar gratuitamente.'}
                 </p>
             </div>
 
@@ -202,21 +204,28 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister, onBack, selectedPlan
                 </form>
             ) : (
                 /* REGISTER FORM */
-                <form className="mt-8 space-y-4" onSubmit={handleRegisterSubmit}>
-                    {/* Visualização do Plano Selecionado */}
-                    {selectedPlan && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3 mb-6">
-                            <div className="bg-blue-600 rounded-full p-1">
-                                <CheckBadgeIcon className="w-5 h-5 text-white" />
+                <form className="mt-6 space-y-4" onSubmit={handleRegisterSubmit}>
+                    
+                    {/* RESUMO DO PLANO SELECIONADO */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex justify-between items-center shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                                <CheckBadgeIcon className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-xs text-slate-500 uppercase font-bold">Plano Escolhido</p>
-                                <p className="text-lg font-bold text-blue-700">
-                                    {selectedPlan} <span className="text-sm font-normal text-slate-600">({selectedBillingCycle === 'yearly' ? 'Anual' : 'Mensal'})</span>
-                                </p>
+                                <p className="text-xs text-blue-600 font-bold uppercase tracking-wide">Plano Escolhido</p>
+                                <h3 className="text-lg font-bold text-slate-900">{selectedPlan}</h3>
                             </div>
                         </div>
-                    )}
+                        <div className="text-right">
+                            <p className="text-lg font-bold text-slate-900">
+                                 R$ {planPrice.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+                            </p>
+                            <p className="text-xs text-slate-500 font-medium">
+                                /{billingCycle === 'yearly' ? 'ano' : 'mês'}
+                            </p>
+                        </div>
+                    </div>
 
                     {error && <p className="text-sm text-red-800 text-center bg-red-100 p-3 rounded-lg border border-red-200">{error}</p>}
 

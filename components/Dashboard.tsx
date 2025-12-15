@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { CURRENCY_SYMBOLS } from '../constants';
 import { useData } from '../context/DataContext';
 import { UsersIcon, FolderIcon, BriefcaseIcon, CurrencyDollarIcon, CheckBadgeIcon, RocketLaunchIcon } from './Icons';
@@ -30,12 +30,13 @@ const Dashboard: React.FC = () => {
     // projects now contains both Sites and Projects
     const allProjects = projects;
     
-    const projectsInProgress = allProjects.filter(p => p.status === 'Em Andamento').length;
-    const completedProjects = allProjects.filter(p => p.status === 'Concluído').length;
-    const availablePartners = partners.filter(p => p.isAvailable).length;
+    // Memoize stats to prevent recalculation on every render
+    const projectsInProgress = useMemo(() => allProjects.filter(p => p.status === 'Em Andamento').length, [allProjects]);
+    const completedProjects = useMemo(() => allProjects.filter(p => p.status === 'Concluído').length, [allProjects]);
+    const availablePartners = useMemo(() => partners.filter(p => p.isAvailable).length, [partners]);
     
     // Fix: Ensure correct summation of float numbers
-    const monthlyRecurringRevenue = Number((
+    const monthlyRecurringRevenue = useMemo(() => Number((
         allProjects.reduce((acc, p) => {
             if (p.hasRetainer && p.retainerValue) {
                 return acc + Number(p.retainerValue);
@@ -45,7 +46,7 @@ const Dashboard: React.FC = () => {
         saasProducts.reduce((acc, s) => {
             return acc + s.plans.reduce((planAcc, plan) => planAcc + (plan.price * plan.customerCount), 0);
         }, 0)
-    ).toFixed(2));
+    ).toFixed(2)), [allProjects, saasProducts]);
 
     const formatCurrency = (value: number) => {
         return `${CURRENCY_SYMBOLS.BRL} ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -59,8 +60,8 @@ const Dashboard: React.FC = () => {
         return diffDays > 0 && diffDays <= 15;
     };
     
-    const projectsNearingDeadline = allProjects.filter(p => isNearingDeadline(p.endDate));
-    const overdueProjects = allProjects.filter(p => p.status === 'Atrasado');
+    const projectsNearingDeadline = useMemo(() => allProjects.filter(p => isNearingDeadline(p.endDate)), [allProjects]);
+    const overdueProjects = useMemo(() => allProjects.filter(p => p.status === 'Atrasado'), [allProjects]);
 
   return (
     <div className="space-y-8">

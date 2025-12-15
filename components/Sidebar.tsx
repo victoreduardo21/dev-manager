@@ -4,7 +4,7 @@ import type { View, User } from '../types';
 import { 
   HomeIcon, UsersIcon, BriefcaseIcon, FolderIcon, GlobeAltIcon, 
   CloudIcon, CurrencyDollarIcon, CreditCardIcon, BuildingOfficeIcon, 
-  UserPlusIcon, Cog6ToothIcon, LogoutIcon, FunnelIcon, MapPinIcon, Logo
+  UserPlusIcon, Cog6ToothIcon, LogoutIcon, FunnelIcon, MapPinIcon 
 } from './Icons';
 
 interface SidebarProps {
@@ -26,9 +26,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
     { name: 'Projetos', icon: <FolderIcon /> },
     { name: 'SaaS', icon: <CloudIcon /> },
     { name: 'Financeiro', icon: <CurrencyDollarIcon /> },
-    { name: 'Assinatura', icon: <CreditCardIcon />, superAdminHidden: true },
+    // Subscription views removed
     { name: 'Empresas', icon: <BuildingOfficeIcon />, adminOnly: true },
-    { name: 'Gerenciar Assinaturas', icon: <CreditCardIcon />, adminOnly: true },
     { name: 'Usuários', icon: <UserPlusIcon /> },
     { name: 'Configuração', icon: <Cog6ToothIcon /> },
   ];
@@ -43,6 +42,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
     onClose(); // Close sidebar on mobile after navigation
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+  };
 
   return (
     <>
@@ -52,16 +59,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
         onClick={onClose}
       ></div>
 
-      <nav className={`w-64 h-full bg-surface/50 backdrop-blur-sm border-r border-white/10 flex flex-col
+      <nav className={`w-64 h-full bg-[#020617] border-r border-white/10 flex flex-col
         fixed lg:static inset-y-0 left-0 z-40
         transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="p-4 border-b border-white/10 text-center flex items-center justify-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-             <Logo className="w-5 h-5 text-white" />
-          </div>
-          <h1 className="text-xl font-bold text-primary">Nexus Dash</h1>
+        <div className="p-4 border-b border-white/10 text-center">
+          <h1 className="text-2xl font-bold text-white">Nexus Dash</h1>
         </div>
         <ul className="flex-1 p-2 overflow-y-auto">
           {navItems.map((item) => (
@@ -71,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
                 className={`w-full flex items-center p-3 my-1 rounded-lg text-left transition-colors duration-200 ${
                   activeView === item.name
                     ? 'bg-primary text-white shadow-lg'
-                    : 'text-text-secondary hover:bg-white/10'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
                 <span className="w-6 h-6 mr-3">{item.icon}</span>
@@ -82,15 +86,17 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
         </ul>
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center mb-4">
-              <img src={`https://i.pravatar.cc/40?u=${currentUser.email}`} alt="User Avatar" className="w-10 h-10 rounded-full" />
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white font-bold border border-white/10 shadow-sm shrink-0">
+                  {getInitials(currentUser.name)}
+              </div>
               <div className="ml-3 overflow-hidden">
-                  <p className="font-semibold text-text-primary truncate">{currentUser.name}</p>
-                  <p className="text-sm text-text-secondary truncate">{currentUser.email}</p>
+                  <p className="font-semibold text-white truncate">{currentUser.name}</p>
+                  <p className="text-sm text-slate-400 truncate">{currentUser.email}</p>
               </div>
           </div>
           <button
             onClick={onLogout}
-            className="w-full flex items-center justify-center p-2 rounded-lg text-left transition-colors duration-200 bg-danger/20 text-danger hover:bg-danger/40"
+            className="w-full flex items-center justify-center p-2 rounded-lg text-left transition-colors duration-200 bg-red-500/10 text-red-400 hover:bg-red-500/20"
           >
             <LogoutIcon />
             <span className="ml-2">Sair</span>

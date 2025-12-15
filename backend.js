@@ -1,6 +1,6 @@
 
 // ======================================================
-// BACKEND NEXUS MANAGER COMPLETO
+// BACKEND NEXUS MANAGER (CORRIGIDO)
 // ======================================================
 
 function doPost(e) {
@@ -9,14 +9,19 @@ function doPost(e) {
 
   try {
     if (!e || !e.postData || !e.postData.contents) {
-      throw new Error("Nenhum dado recebido.");
+      return createJSONOutput({ status: 'online' });
     }
 
-    var payload = JSON.parse(e.postData.contents);
+    var payload;
+    try {
+        payload = JSON.parse(e.postData.contents);
+    } catch (err) {
+        return createJSONOutput({ error: "JSON Inválido" });
+    }
+    
     var action = payload.action;
     var result = null;
 
-    // Roteamento
     if (action === 'login') {
       result = handleLogin(payload);
     } else if (action === 'registerUser') {
@@ -27,19 +32,24 @@ function doPost(e) {
       result = handleSaveItem(payload);
     } else if (action === 'updateItem') {
       result = handleUpdateItem(payload);
+    } else if (action === 'deleteItem') {
+      result = handleDeleteItem(payload);
     } else {
-      throw new Error("Ação desconhecida: " + action);
+      result = { error: "Ação desconhecida: " + action };
     }
 
-    return ContentService.createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON);
+    return createJSONOutput(result);
 
   } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({ 'error': error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+    return createJSONOutput({ 'error': error.toString(), 'stack': error.stack });
   } finally {
     lock.releaseLock();
   }
+}
+
+function createJSONOutput(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 // --- HANDLERS ---
@@ -59,29 +69,35 @@ function handleFetchData() {
 
 function handleSaveItem(data) {
   var sheet = getSheet(data.collection);
-  // Garante que todas as chaves do objeto existam como colunas
   syncHeaders(sheet, data.item); 
   appendRow(sheet, data.item);
-  return { success: true };
+  return { success: true, id: data.item.id };
 }
 
 function handleUpdateItem(data) {
   var sheet = getSheet(data.collection);
-  syncHeaders(sheet, data.item); // Garante headers caso novos campos sejam adicionados na edição
+  syncHeaders(sheet, data.item);
+  SpreadsheetApp.flush(); 
   updateRow(sheet, data.item);
+  return { success: true };
+}
+
+function handleDeleteItem(data) {
+  var sheet = getSheet(data.collection);
+  deleteRow(sheet, data.id);
   return { success: true };
 }
 
 function handleLogin(data) {
   var users = readSheetData('Users');
-  // Busca case-insensitive no email
   var found = users.find(function(u) {
     return String(u.email).toLowerCase() === String(data.email).toLowerCase() && String(u.password) === String(data.password);
   });
 
   if (found) {
-    delete found.password; // Remove senha do retorno
-    return { user: found };
+    var userSafe = JSON.parse(JSON.stringify(found));
+    delete userSafe.password;
+    return { user: userSafe };
   } else {
     throw new Error("Email ou senha incorretos.");
   }
@@ -95,59 +111,72 @@ function handleRegisterUser(data) {
   var exists = users.some(function(u) { return String(u.email).toLowerCase() === String(data.email).toLowerCase(); });
   if (exists) throw new Error("Este email já está cadastrado.");
 
-  // Configuração de Preços e Ciclos
-  var prices = {
-    'Starter': { monthly: 97, yearly: 970 },
-    'PRO': { monthly: 200, yearly: 2000 },
-    'VIP': { monthly: 500, yearly: 5000 }
+  // --- LÓGICA DE PREÇOS E PLANOS ---
+  var prices = { 
+    'Starter': { monthly: 97, yearly: 970 }, 
+    'PRO': { monthly: 200, yearly: 2000 }, 
+    'VIP': { monthly: 500, yearly: 5000 } 
   };
   
+  // Captura os dados enviados pelo frontend
   var planName = data.plan || 'Starter';
   var billingCycle = data.billingCycle || 'monthly';
-  var planData = prices[planName] || { monthly: 97, yearly: 970 };
-  var planPrice = billingCycle === 'yearly' ? planData.yearly : planData.monthly;
+  
+  // Validação básica do ciclo
+  if (billingCycle !== 'monthly' && billingCycle !== 'yearly') {
+      billingCycle = 'monthly';
+  }
+  
+  // Tradução para a coluna 'pagamento' na planilha (Coluna K)
+  var pagamentoLabel = (billingCycle === 'yearly') ? 'Anual' : 'Mensal';
+  
+  // Seleciona o preço correto
+  var planPricing = prices[planName] || prices['Starter'];
+  var finalPrice = (billingCycle === 'yearly') ? planPricing.yearly : planPricing.monthly;
 
-  // Criar ID da Empresa
   var companyId = 'comp-' + new Date().getTime();
-
-  // Calcular vencimento (30 dias ou 365 dias)
+  
+  // Calcula Vencimento (30 dias ou 1 ano)
   var dueDate = new Date();
   if (billingCycle === 'yearly') {
-      dueDate.setFullYear(dueDate.getFullYear() + 1);
+      dueDate.setDate(dueDate.getDate() + 365);
   } else {
       dueDate.setDate(dueDate.getDate() + 30);
   }
 
-  // Criar Registro da Empresa
+  // --- CRIAÇÃO DA EMPRESA ---
   var newCompany = {
     id: companyId,
-    name: data.companyId, // No cadastro simplificado, companyId vem com o nome
+    name: data.companyId, 
     cnpj_cpf: data.cpf || '',
     contactName: data.name,
     contactEmail: data.email,
     contactPhone: data.phone,
-    subscriptionValue: planPrice,
+    subscriptionValue: finalPrice,
     currency: 'BRL',
     subscriptionStatus: 'Ativa',
-    plan: planName,
+    plan: planName,            
     billingCycle: billingCycle,
+    pagamento: pagamentoLabel, // SALVA 'Mensal' ou 'Anual' na planilha Companies
     subscriptionDueDate: dueDate.toISOString(), 
-    paymentHistory: []
+    paymentHistory: '[]'
   };
 
   syncHeaders(companiesSheet, newCompany);
   appendRow(companiesSheet, newCompany);
 
-  // Criar Usuário Admin vinculado à empresa
+  // --- CRIAÇÃO DO USUÁRIO ---
   var newUser = {
     id: 'user-' + new Date().getTime(),
-    companyId: companyId, // Vincula ao ID gerado
+    companyId: companyId,
     name: data.name,
     email: data.email,
     password: data.password,
-    role: data.role || 'Admin', // Primeiro usuário é Admin
+    role: 'Admin',
     phone: data.phone || '',
-    cpf: data.cpf || ''
+    cpf: data.cpf || '',
+    plan: planName,            
+    pagamento: pagamentoLabel // SALVA 'Mensal' ou 'Anual' na planilha Users (Coluna K)
   };
 
   syncHeaders(usersSheet, newUser);
@@ -158,15 +187,17 @@ function handleRegisterUser(data) {
   return { user: safeUser };
 }
 
-// --- HELPERS DE BANCO DE DADOS (PLANILHA) ---
+// --- FUNÇÕES DE BANCO DE DADOS ---
 
 function getSheet(name) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(name);
   if (!sheet) {
     sheet = ss.insertSheet(name);
-    // Cria coluna ID padrão se for nova
-    sheet.appendRow(['id']);
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['id']);
+      SpreadsheetApp.flush();
+    }
   }
   return sheet;
 }
@@ -175,41 +206,80 @@ function readSheetData(sheetName) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
   if (!sheet) return [];
 
-  var data = sheet.getDataRange().getValues();
-  if (data.length < 2) return []; // Só tem cabeçalho ou está vazia
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
 
+  if (lastRow < 2 || lastCol < 1) return [];
+
+  var data = sheet.getRange(1, 1, lastRow, lastCol).getValues();
   var headers = data[0];
   var results = [];
 
   for (var i = 1; i < data.length; i++) {
     var row = data[i];
     var obj = {};
+    var hasData = false;
+
     for (var j = 0; j < headers.length; j++) {
       var key = headers[j];
       var value = row[j];
       
-      // Tenta fazer parse de JSON se parecer um objeto ou array
+      if (value !== "") hasData = true;
+
       if (typeof value === 'string' && (value.startsWith('[') || value.startsWith('{'))) {
         try {
           value = JSON.parse(value);
-        } catch (e) {
-          // Mantém como string se falhar
-        }
+        } catch (e) {}
       }
-      // Converte datas para string ISO
-      if (value instanceof Date) {
-        value = value.toISOString();
-      }
-      
       obj[key] = value;
     }
-    results.push(obj);
+    if (hasData) results.push(obj);
   }
   return results;
 }
 
+function syncHeaders(sheet, item) {
+  var lastCol = sheet.getLastColumn();
+  var headers = [];
+  
+  if (lastCol > 0) {
+    headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  }
+  
+  var newHeaders = [];
+  var existingMap = {};
+  
+  for (var i = 0; i < headers.length; i++) {
+    existingMap[String(headers[i])] = true;
+  }
+
+  if (!existingMap['id']) {
+    newHeaders.push('id');
+    existingMap['id'] = true;
+  }
+
+  for (var key in item) {
+    if (!existingMap[key]) {
+      newHeaders.push(key);
+      existingMap[key] = true;
+    }
+  }
+
+  if (newHeaders.length > 0) {
+    var startCol = (lastCol === 0) ? 1 : lastCol + 1;
+    sheet.getRange(1, startCol, 1, newHeaders.length).setValues([newHeaders]);
+    SpreadsheetApp.flush(); 
+  }
+}
+
 function appendRow(sheet, item) {
-  var headers = sheet.getDataRange().getValues()[0];
+  var lastCol = sheet.getLastColumn();
+  if (lastCol === 0) {
+      syncHeaders(sheet, item);
+      lastCol = sheet.getLastColumn();
+  }
+
+  var headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   var row = [];
   
   for (var i = 0; i < headers.length; i++) {
@@ -231,20 +301,26 @@ function updateRow(sheet, item) {
   var headers = data[0];
   var idIndex = headers.indexOf('id');
   
-  if (idIndex === -1) throw new Error("Coluna ID não encontrada na aba " + sheet.getName());
+  if (idIndex === -1) {
+     syncHeaders(sheet, item);
+     data = sheet.getDataRange().getValues();
+     headers = data[0];
+     idIndex = headers.indexOf('id');
+     if (idIndex === -1) throw new Error("ID column not found");
+  }
 
   var rowIndex = -1;
-  // Procura a linha pelo ID
+  var itemIdStr = String(item.id);
+
   for (var i = 1; i < data.length; i++) {
-    if (String(data[i][idIndex]) === String(item.id)) {
-      rowIndex = i + 1; // +1 porque linhas na planilha começam em 1
+    if (String(data[i][idIndex]) === itemIdStr) {
+      rowIndex = i + 1;
       break;
     }
   }
 
-  if (rowIndex === -1) throw new Error("Item com ID " + item.id + " não encontrado.");
+  if (rowIndex === -1) throw new Error("Item not found: " + item.id);
 
-  // Atualiza célula por célula para não perder dados de colunas que não estão no objeto item
   for (var key in item) {
     var colIndex = headers.indexOf(key);
     if (colIndex > -1) {
@@ -257,38 +333,19 @@ function updateRow(sheet, item) {
   }
 }
 
-// Verifica se existem novas chaves no objeto que não estão no cabeçalho e as adiciona
-function syncHeaders(sheet, item) {
-  var headers = sheet.getDataRange().getValues()[0];
-  var newHeaders = [];
-  var existingHeadersMap = {};
+function deleteRow(sheet, id) {
+  var data = sheet.getDataRange().getValues();
+  if (data.length < 2) return;
   
-  // Mapeia headers existentes
-  if (headers) {
-    for (var i = 0; i < headers.length; i++) {
-      existingHeadersMap[headers[i]] = true;
-    }
-  } else {
-    headers = [];
-  }
+  var headers = data[0];
+  var idIndex = headers.indexOf('id');
+  
+  if (idIndex === -1) return;
 
-  // Verifica chaves do objeto
-  for (var key in item) {
-    if (!existingHeadersMap[key]) {
-      newHeaders.push(key);
-      headers.push(key); // Adiciona ao array local para próximas iterações
-    }
-  }
-
-  // Se houver novos headers, adiciona na primeira linha
-  if (newHeaders.length > 0) {
-    // Se a planilha estiver totalmente vazia, apenas appendRow
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow(newHeaders);
-    } else {
-      // Adiciona nas próximas colunas da linha 1
-      var startCol = sheet.getLastColumn() + 1;
-      sheet.getRange(1, startCol, 1, newHeaders.length).setValues([newHeaders]);
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][idIndex]) === String(id)) {
+      sheet.deleteRow(i + 1);
+      return;
     }
   }
 }
