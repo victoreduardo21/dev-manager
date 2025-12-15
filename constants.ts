@@ -13,7 +13,10 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
 export const PLANS = [
     {
         name: 'PRO',
-        price: 39.90,
+        price: {
+            monthly: 200.00,
+            yearly: 2000.00
+        },
         description: 'Ideal para profissionais que buscam crescimento.',
         features: [
             "CRM de Vendas Ilimitado",
@@ -28,7 +31,10 @@ export const PLANS = [
     },
     {
         name: 'VIP',
-        price: 79.90,
+        price: {
+            monthly: 500.00,
+            yearly: 5000.00
+        },
         description: 'Controle total e automação para sua empresa.',
         features: [
             "Tudo do plano PRO",

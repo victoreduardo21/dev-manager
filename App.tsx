@@ -18,7 +18,7 @@ import AdminSubscriptionManager from './components/AdminSubscriptionManager';
 import LeadGen from './components/LeadGen';
 import LandingPage from './components/LandingPage';
 import { DataProvider } from './context/DataContext';
-import type { View, User, Company } from './types';
+import type { View, User, Company, BillingCycle } from './types';
 import { api } from './services/api';
 
 const App: React.FC = () => {
@@ -31,8 +31,9 @@ const App: React.FC = () => {
   // Estado para controlar a exibição da Landing Page vs Login
   const [showLanding, setShowLanding] = useState(true);
   
-  // Novo estado para armazenar o plano selecionado na Landing Page
+  // Novo estado para armazenar o plano selecionado e o ciclo de cobrança na Landing Page
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+  const [selectedBillingCycle, setSelectedBillingCycle] = useState<BillingCycle>('monthly');
 
   // Tentar restaurar sessão
   useEffect(() => {
@@ -60,9 +61,9 @@ const App: React.FC = () => {
     }
   };
 
-  const handleRegister = async (userData: { companyName: string; name: string; email: string; phone: string; cpf: string; password: string, plan?: string }): Promise<void> => {
+  const handleRegister = async (userData: { companyName: string; name: string; email: string; phone: string; cpf: string; password: string, plan?: string, billingCycle?: BillingCycle }): Promise<void> => {
       // Chama o backend para criar empresa e usuário
-      // Nota: Incluímos o plano nos dados, embora a API precise ser preparada para receber (por enquanto vai no objeto userData)
+      // Nota: Incluímos o plano e ciclo nos dados
       await api.register(userData, userData.companyName);
   };
 
@@ -86,9 +87,10 @@ const App: React.FC = () => {
   };
   
   // Função chamada quando o usuário clica em "Começar" ou escolhe um plano na Landing Page
-  const handleEnterApp = (plan?: string) => {
+  const handleEnterApp = (plan?: string, cycle: BillingCycle = 'monthly') => {
       if (plan) {
           setSelectedPlan(plan);
+          setSelectedBillingCycle(cycle);
       } else {
           setSelectedPlan(null); // Login normal sem plano selecionado
       }
@@ -127,6 +129,7 @@ const App: React.FC = () => {
             onRegister={handleRegister} 
             onBack={() => setShowLanding(true)} 
             selectedPlan={selectedPlan} // Passa o plano selecionado para o Login
+            selectedBillingCycle={selectedBillingCycle}
         />
     );
   }

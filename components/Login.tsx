@@ -1,15 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChevronLeftIcon, CheckBadgeIcon } from './Icons';
+import { ChevronLeftIcon, CheckBadgeIcon, Logo } from './Icons';
+import type { BillingCycle } from '../types';
 
 interface LoginProps {
   onLogin: (email: string, pass: string) => Promise<boolean>;
   onRegister: (userData: any) => Promise<void>;
   onBack: () => void;
   selectedPlan?: string | null;
+  selectedBillingCycle?: BillingCycle;
 }
 
-const Login: React.FC<LoginProps> = ({ onLogin, onRegister, onBack, selectedPlan }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, onRegister, onBack, selectedPlan, selectedBillingCycle = 'monthly' }) => {
   const [isLoginView, setIsLoginView] = useState(true);
   
   // Se um plano foi passado, muda automaticamente para a tela de registro
@@ -74,7 +76,8 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister, onBack, selectedPlan
             phone: regPhone,
             cpf: regCpf,
             password: regPassword,
-            plan: selectedPlan || 'Starter' // Envia o plano selecionado ou default
+            plan: selectedPlan || 'Starter', // Envia o plano selecionado ou default
+            billingCycle: selectedBillingCycle
         });
         
         setSuccess('Cadastro realizado com sucesso! Seus dados foram salvos.');
@@ -115,9 +118,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister, onBack, selectedPlan
         <div className="relative z-10 max-w-lg">
             <div className="mb-8 flex items-center gap-4">
                 <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 text-white">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
-                    </svg>
+                    <Logo className="w-8 h-8 text-white" />
                 </div>
                 <span className="text-3xl font-bold text-white tracking-wide">Nexus Manager</span>
             </div>
@@ -210,7 +211,9 @@ const Login: React.FC<LoginProps> = ({ onLogin, onRegister, onBack, selectedPlan
                             </div>
                             <div>
                                 <p className="text-xs text-slate-500 uppercase font-bold">Plano Escolhido</p>
-                                <p className="text-lg font-bold text-blue-700">{selectedPlan}</p>
+                                <p className="text-lg font-bold text-blue-700">
+                                    {selectedPlan} <span className="text-sm font-normal text-slate-600">({selectedBillingCycle === 'yearly' ? 'Anual' : 'Mensal'})</span>
+                                </p>
                             </div>
                         </div>
                     )}

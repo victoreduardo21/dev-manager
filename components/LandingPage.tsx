@@ -2,11 +2,12 @@
 import React, { useEffect, useState } from 'react';
 import { 
     ChartBarIcon, UsersIcon, FolderIcon, PhoneIcon, CheckBadgeIcon, 
-    CloudIcon, ChevronRightIcon, FunnelIcon, CurrencyDollarIcon
+    CloudIcon, ChevronRightIcon, FunnelIcon, CurrencyDollarIcon, Logo
 } from './Icons';
+import type { BillingCycle } from '../types';
 
 interface LandingPageProps {
-    onEnterApp: (plan?: string) => void;
+    onEnterApp: (plan?: string, billingCycle?: BillingCycle) => void;
 }
 
 // --- Componentes Visuais (Mockups do Sistema) ---
@@ -24,8 +25,8 @@ const SystemDashboardMockup = () => (
             {/* Fake Sidebar */}
             <div className="w-16 md:w-56 bg-[#020617] p-4 flex flex-col gap-4 text-slate-400 border-r border-slate-800">
                 <div className="h-8 w-8 md:w-auto bg-blue-600 rounded-lg mb-4 flex items-center justify-center text-white font-bold">
+                    <Logo className="w-6 h-6 text-white" />
                     <span className="hidden md:inline ml-2">Nexus</span>
-                    <span className="md:hidden">N</span>
                 </div>
                 <div className="h-2 w-full bg-slate-800 rounded opacity-20 mb-2"></div>
                 <div className="space-y-3">
@@ -123,12 +124,13 @@ const FeatureCard: React.FC<{ title: string; desc: string; icon: React.ReactNode
 const PricingCard: React.FC<{ 
     title: string; 
     price: string; 
+    period: string;
     desc: string; 
     features: string[]; 
     isPopular?: boolean;
     buttonText?: string;
     onClick: () => void;
-}> = ({ title, price, desc, features, isPopular, buttonText = "Escolher Plano", onClick }) => (
+}> = ({ title, price, period, desc, features, isPopular, buttonText = "Escolher Plano", onClick }) => (
     <div className={`relative p-8 rounded-2xl border transition-all duration-300 flex flex-col h-full ${
         isPopular 
             ? 'bg-white border-blue-500 shadow-2xl shadow-blue-200/50 scale-105 z-10' 
@@ -142,7 +144,7 @@ const PricingCard: React.FC<{
         <h3 className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
         <div className="flex items-baseline gap-1 mb-1">
             <span className="text-4xl font-bold text-slate-900">{price}</span>
-            <span className="text-lg text-slate-500">/mês</span>
+            <span className="text-lg text-slate-500">{period}</span>
         </div>
         <p className={`text-sm mb-6 ${isPopular ? 'text-blue-600' : 'text-slate-500'}`}>{desc}</p>
         
@@ -170,6 +172,7 @@ const PricingCard: React.FC<{
 
 const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
     const [scrolled, setScrolled] = useState(false);
+    const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -191,10 +194,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                 <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
                     <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                         <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                            {/* Logo Atualizada (System Icon) */}
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
-                            </svg>
+                            {/* Logo Atualizada */}
+                            <Logo className="w-6 h-6 text-white" />
                         </div>
                         <span className="text-2xl font-bold tracking-tight text-slate-900">Nexus<span className="text-blue-600">Manager</span></span>
                     </div>
@@ -366,17 +367,32 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
             {/* Pricing Section */}
             <section id="pricing" className="py-24 relative z-10 bg-slate-50 border-t border-slate-200">
                 <div className="max-w-7xl mx-auto px-6">
-                    <div className="text-center mb-16">
+                    <div className="text-center mb-10">
                         <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900">Planos que cabem no seu bolso</h2>
-                        <p className="text-slate-500 max-w-2xl mx-auto text-lg">
+                        <p className="text-slate-500 max-w-2xl mx-auto text-lg mb-8">
                             Escolha o plano ideal para a sua fase. Cancele a qualquer momento.
                         </p>
+
+                        {/* Toggle Switch Mensal/Anual */}
+                        <div className="flex items-center justify-center gap-4">
+                            <span className={`text-sm font-bold ${billingCycle === 'monthly' ? 'text-slate-900' : 'text-slate-400'}`}>Mensal</span>
+                            <button 
+                                onClick={() => setBillingCycle(prev => prev === 'monthly' ? 'yearly' : 'monthly')}
+                                className="w-14 h-7 bg-blue-600 rounded-full p-1 relative transition-colors duration-300 focus:outline-none"
+                            >
+                                <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${billingCycle === 'yearly' ? 'translate-x-7' : 'translate-x-0'}`}></div>
+                            </button>
+                            <span className={`text-sm font-bold ${billingCycle === 'yearly' ? 'text-slate-900' : 'text-slate-400'}`}>
+                                Anual <span className="text-green-600 text-xs ml-1 bg-green-100 px-2 py-0.5 rounded-full">17% OFF</span>
+                            </span>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
                         <PricingCard 
                             title="PRO" 
-                            price="R$ 39,90" 
+                            price={billingCycle === 'monthly' ? "R$ 200,00" : "R$ 2.000,00"}
+                            period={billingCycle === 'monthly' ? "/mês" : "/ano"}
                             desc="Ideal para profissionais que buscam crescimento."
                             features={[
                                 "CRM de Vendas Ilimitado",
@@ -385,11 +401,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                                 "Agenda Financeira",
                                 "Relatórios Avançados"
                             ]}
-                            onClick={() => onEnterApp('PRO')}
+                            onClick={() => onEnterApp('PRO', billingCycle)}
                         />
                         <PricingCard 
                             title="VIP" 
-                            price="R$ 79,90" 
+                            price={billingCycle === 'monthly' ? "R$ 500,00" : "R$ 5.000,00"}
+                            period={billingCycle === 'monthly' ? "/mês" : "/ano"}
                             desc="Controle total e automação para sua empresa."
                             isPopular={true}
                             features={[
@@ -400,7 +417,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                                 "Assistente Financeiro IA",
                                 "Prioridade no Suporte"
                             ]}
-                            onClick={() => onEnterApp('VIP')}
+                            onClick={() => onEnterApp('VIP', billingCycle)}
                         />
                     </div>
                 </div>
@@ -430,9 +447,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                         <div className="flex items-center gap-2 mb-4 text-white">
                             {/* Logo Footer Atualizada */}
                             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-white">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
-                                </svg>
+                                <Logo className="w-6 h-6 text-white" />
                             </div>
                             <span className="text-xl font-bold">Nexus Manager</span>
                         </div>

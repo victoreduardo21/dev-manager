@@ -95,17 +95,28 @@ function handleRegisterUser(data) {
   var exists = users.some(function(u) { return String(u.email).toLowerCase() === String(data.email).toLowerCase(); });
   if (exists) throw new Error("Este email já está cadastrado.");
 
-  // Configuração de Preços
+  // Configuração de Preços e Ciclos
   var prices = {
-    'Starter': 97,
-    'Professional': 197,
-    'Business': 497
+    'Starter': { monthly: 97, yearly: 970 },
+    'PRO': { monthly: 200, yearly: 2000 },
+    'VIP': { monthly: 500, yearly: 5000 }
   };
+  
   var planName = data.plan || 'Starter';
-  var planPrice = prices[planName] || 97;
+  var billingCycle = data.billingCycle || 'monthly';
+  var planData = prices[planName] || { monthly: 97, yearly: 970 };
+  var planPrice = billingCycle === 'yearly' ? planData.yearly : planData.monthly;
 
   // Criar ID da Empresa
   var companyId = 'comp-' + new Date().getTime();
+
+  // Calcular vencimento (30 dias ou 365 dias)
+  var dueDate = new Date();
+  if (billingCycle === 'yearly') {
+      dueDate.setFullYear(dueDate.getFullYear() + 1);
+  } else {
+      dueDate.setDate(dueDate.getDate() + 30);
+  }
 
   // Criar Registro da Empresa
   var newCompany = {
@@ -119,7 +130,8 @@ function handleRegisterUser(data) {
     currency: 'BRL',
     subscriptionStatus: 'Ativa',
     plan: planName,
-    subscriptionDueDate: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 dias
+    billingCycle: billingCycle,
+    subscriptionDueDate: dueDate.toISOString(), 
     paymentHistory: []
   };
 

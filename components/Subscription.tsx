@@ -4,7 +4,7 @@ import { useData } from '../context/DataContext';
 import { CURRENCY_SYMBOLS } from '../constants';
 import PaymentForm from './PaymentForm';
 import { CreditCardIcon, CheckBadgeIcon, RocketLaunchIcon, CurrencyDollarIcon } from './Icons';
-import type { Company } from '../types';
+import type { Company, BillingCycle } from '../types';
 import UpgradeModal from './UpgradeModal';
 
 
@@ -32,6 +32,7 @@ const Subscription: React.FC = () => {
             : 'bg-red-500/20 text-red-400';
 
     const currentPlanName = myCompany.plan || 'Starter';
+    const currentCycle = myCompany.billingCycle || 'monthly';
 
     const openPaymentModal = () => {
         openModal(
@@ -50,13 +51,14 @@ const Subscription: React.FC = () => {
         setIsPaying(false);
     };
 
-    const handleUpgradePlan = async (newPlanName: string, newPrice: number) => {
+    const handleUpgradePlan = async (newPlanName: string, newPrice: number, newCycle: BillingCycle) => {
         closeModal();
 
         const updatedCompany: Company = {
             ...myCompany,
             plan: newPlanName,
-            subscriptionValue: newPrice
+            subscriptionValue: newPrice,
+            billingCycle: newCycle
         };
         
         await updateCompany(updatedCompany);
@@ -69,7 +71,7 @@ const Subscription: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-bold text-text-primary mb-2">Parabéns!</h3>
                 <p className="text-text-secondary mb-6">
-                    Sua empresa migrou para o plano <span className="text-primary font-bold">{newPlanName}</span> com sucesso.
+                    Sua empresa migrou para o plano <span className="text-primary font-bold">{newPlanName} ({newCycle === 'yearly' ? 'Anual' : 'Mensal'})</span> com sucesso.
                     Novos recursos foram desbloqueados.
                 </p>
                 <button 
@@ -121,7 +123,7 @@ const Subscription: React.FC = () => {
                         <div className="space-y-4 relative z-10">
                             <div className="flex flex-col gap-1">
                                 <span className="text-text-secondary text-xs uppercase font-bold tracking-wider">Plano Atual</span>
-                                <span className="text-2xl font-bold text-primary">{currentPlanName}</span>
+                                <span className="text-2xl font-bold text-primary">{currentPlanName} <span className="text-sm text-text-secondary font-normal">({currentCycle === 'yearly' ? 'Anual' : 'Mensal'})</span></span>
                             </div>
                             
                             <div className="h-px bg-white/10"></div>
@@ -146,7 +148,7 @@ const Subscription: React.FC = () => {
                     </div>
 
                     <div className="bg-surface p-6 rounded-lg shadow-lg border border-white/10 text-center">
-                        <p className="text-text-secondary uppercase text-xs font-bold tracking-wider mb-2">Valor Mensal</p>
+                        <p className="text-text-secondary uppercase text-xs font-bold tracking-wider mb-2">Valor {currentCycle === 'yearly' ? 'Anual' : 'Mensal'}</p>
                         <p className="text-4xl font-bold text-text-primary mb-6">
                             {CURRENCY_SYMBOLS[myCompany.currency]} {myCompany.subscriptionValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>

@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { PLANS } from '../constants';
 import { CheckBadgeIcon, LockClosedIcon } from './Icons';
+import type { BillingCycle } from '../types';
 
 interface UpgradeModalProps {
     currentPlan: string;
-    onConfirm: (planName: string, price: number) => void;
+    onConfirm: (planName: string, price: number, cycle: BillingCycle) => void;
     onCancel: () => void;
 }
 
@@ -14,6 +15,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ currentPlan, onConfirm, onC
     const [selectedPlan, setSelectedPlan] = useState<string | null>(
         currentPlan === 'PRO' ? 'VIP' : 'PRO'
     );
+    const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
 
     const handleSelect = (planName: string) => {
         if (planName !== currentPlan) {
@@ -23,13 +25,29 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ currentPlan, onConfirm, onC
 
     const getSelectedPrice = () => {
         const p = PLANS.find(p => p.name === selectedPlan);
-        return p ? p.price : 0;
+        return p ? (billingCycle === 'yearly' ? p.price.yearly : p.price.monthly) : 0;
     };
 
     return (
         <div className="flex flex-col h-full">
-            <div className="mb-6">
+            <div className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <p className="text-text-secondary">Escolha o nível de controle que você deseja.</p>
+                
+                {/* Toggle Switch inside Modal */}
+                <div className="flex items-center gap-3 bg-slate-100 p-1 rounded-full border border-slate-200">
+                     <button 
+                        onClick={() => setBillingCycle('monthly')}
+                        className={`px-3 py-1 text-xs font-bold rounded-full transition-all ${billingCycle === 'monthly' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                     >
+                        Mensal
+                     </button>
+                     <button 
+                        onClick={() => setBillingCycle('yearly')}
+                        className={`px-3 py-1 text-xs font-bold rounded-full transition-all flex items-center gap-1 ${billingCycle === 'yearly' ? 'bg-green-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                     >
+                        Anual <span className={`${billingCycle === 'yearly' ? 'text-white/90' : 'text-green-600'}`}>17% OFF</span>
+                     </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 px-2">
@@ -37,6 +55,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ currentPlan, onConfirm, onC
                     const isCurrent = plan.name === currentPlan;
                     const isSelected = selectedPlan === plan.name;
                     const isVip = plan.name === 'VIP';
+                    const displayPrice = billingCycle === 'yearly' ? plan.price.yearly : plan.price.monthly;
                     
                     return (
                         <div 
@@ -79,8 +98,8 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ currentPlan, onConfirm, onC
                             </div>
                             
                             <div className="flex items-baseline gap-1 mb-6">
-                                <span className="text-3xl font-extrabold text-slate-900">R$ {plan.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                <span className="text-sm text-slate-500 font-medium">/mês</span>
+                                <span className="text-3xl font-extrabold text-slate-900">R$ {displayPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                <span className="text-sm text-slate-500 font-medium">{billingCycle === 'yearly' ? '/ano' : '/mês'}</span>
                             </div>
 
                             <div className="h-px bg-slate-100 mb-6"></div>
@@ -116,7 +135,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ currentPlan, onConfirm, onC
                     Cancelar
                 </button>
                 <button 
-                    onClick={() => selectedPlan && onConfirm(selectedPlan, getSelectedPrice())}
+                    onClick={() => selectedPlan && onConfirm(selectedPlan, getSelectedPrice(), billingCycle)}
                     disabled={!selectedPlan}
                     className={`
                         px-8 py-3 rounded-xl text-white font-bold shadow-lg transition-all transform hover:scale-105
@@ -126,7 +145,7 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ currentPlan, onConfirm, onC
                         }
                     `}
                 >
-                    {selectedPlan ? `Confirmar Upgrade para ${selectedPlan}` : 'Selecione um plano'}
+                    {selectedPlan ? `Confirmar Upgrade` : 'Selecione um plano'}
                 </button>
             </div>
         </div>

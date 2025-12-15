@@ -10,6 +10,7 @@ export type ProjectCategory = 'Site' | 'Sistema' | 'App' | 'Marketing' | 'Consul
 export type UserRole = 'SuperAdmin' | 'Admin' | 'User';
 export type SubscriptionStatus = 'Ativa' | 'Inativa';
 export type LeadStatus = 'Novo' | 'Contatado' | 'Qualificado' | 'Proposta' | 'Ganho' | 'Perdido';
+export type BillingCycle = 'monthly' | 'yearly';
 
 export interface Client {
   id: string;
@@ -114,6 +115,7 @@ export interface Company {
     subscriptionStatus: SubscriptionStatus;
     subscriptionDueDate: string;
     plan?: string; // Novo campo para armazenar o nome do plano (Starter, Professional, etc)
+    billingCycle?: BillingCycle; // Mensal ou Anual
     paymentHistory: SubscriptionPayment[];
     savedCard?: {
         last4: string;
