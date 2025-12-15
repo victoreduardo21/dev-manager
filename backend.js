@@ -63,7 +63,8 @@ function handleFetchData() {
     sites: readSheetData('Sites'),
     partners: readSheetData('Partners'),
     saasProducts: readSheetData('SaaSProducts'),
-    leads: readSheetData('Leads')
+    leads: readSheetData('Leads'),
+    transactions: readSheetData('Transactions') // Nova aba para pagamentos manuais
   };
 }
 

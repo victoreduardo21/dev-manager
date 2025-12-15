@@ -13,7 +13,8 @@ const COLLECTION_MAP: Record<string, string> = {
     sites: 'Sites',
     partners: 'Partners',
     saasProducts: 'SaaSProducts',
-    leads: 'Leads'
+    leads: 'Leads',
+    transactions: 'Transactions'
 };
 
 const request = async (action: string, payload: any = {}) => {
@@ -88,13 +89,14 @@ export const api = {
                 sites: data.sites || [],
                 partners: data.partners || [],
                 saasProducts: data.saasProducts || [],
-                leads: data.leads || []
+                leads: data.leads || [],
+                transactions: data.transactions || []
             };
         } catch (error) {
             console.error("Falha crítica ao buscar dados. O sistema funcionará offline/vazio.", error);
             // Retorna estrutura vazia para não quebrar a tela branca
             return {
-                users: [], companies: [], clients: [], projects: [], sites: [], partners: [], saasProducts: [], leads: []
+                users: [], companies: [], clients: [], projects: [], sites: [], partners: [], saasProducts: [], leads: [], transactions: []
             };
         }
     },

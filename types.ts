@@ -11,6 +11,7 @@ export type UserRole = 'SuperAdmin' | 'Admin' | 'User';
 export type SubscriptionStatus = 'Ativa' | 'Inativa';
 export type LeadStatus = 'Novo' | 'Contatado' | 'Qualificado' | 'Proposta' | 'Ganho' | 'Perdido';
 export type BillingCycle = 'monthly' | 'yearly';
+export type TransactionStatus = 'Pago' | 'Pendente' | 'Atrasado';
 
 export interface Client {
   id: string;
@@ -37,7 +38,18 @@ export interface Payment {
     amount: number;
     dueDate: string;
     paidDate?: string; // Data real do recebimento
-    status: 'Pago' | 'Pendente' | 'Atrasado';
+    status: TransactionStatus;
+}
+
+// Transações Manuais (Novas Entradas)
+export interface Transaction {
+    id: string;
+    companyId: string;
+    description: string;
+    amount: number;
+    date: string;
+    status: TransactionStatus;
+    category: string; // Ex: 'Atualização', 'Manutenção', 'Consultoria Avulsa'
 }
 
 export interface Activity {
@@ -158,36 +170,36 @@ export interface DataContextType {
     clients: Client[];
     partners: Partner[];
     projects: Project[];
-    // sites removed
     saasProducts: SaaSProduct[];
     users: User[];
     companies: Company[];
     leads: Lead[];
+    transactions: Transaction[]; // Nova lista
     whatsappConfig: WhatsAppConfig;
     setWhatsappConfig: (config: WhatsAppConfig) => void;
     addClient: (client: Omit<Client, 'id' | 'companyId'>) => Promise<void>;
     addPartner: (partner: Omit<Partner, 'id' | 'isAvailable' | 'companyId'>) => Promise<void>;
     addProject: (project: Omit<Project, 'id' | 'payments' | 'status' | 'progress' | 'activities' | 'companyId'>) => Promise<void>;
-    // addSite removed
     addSaaSProduct: (product: Omit<SaaSProduct, 'id'| 'companyId'>) => Promise<void>;
     addCompany: (companyData: Omit<Company, 'id' | 'subscriptionDueDate' | 'paymentHistory'> & { adminUser: { name: string; email: string; phone: string } }) => Promise<void>;
     addUser: (user: Omit<User, 'id'>) => Promise<void>; // Removido 'password' do Omit para permitir envio
     addLead: (lead: Omit<Lead, 'id' | 'companyId' | 'createdAt' | 'messages'> & { messages?: ChatMessage[] }) => Promise<void>;
+    addTransaction: (transaction: Omit<Transaction, 'id' | 'companyId'>) => Promise<void>; // Nova função
     updateClient: (client: Client) => Promise<void>;
     updatePartner: (partner: Partner) => Promise<void>;
     updateProject: (project: Project) => Promise<void>;
-    // updateSite removed
     updateSaaSProduct: (product: SaaSProduct) => Promise<void>;
     updateCompany: (company: Company) => Promise<void>;
     updateUser: (user: User) => Promise<void>;
     updateLead: (lead: Lead) => Promise<void>;
+    updateTransaction: (transaction: Transaction) => Promise<void>; // Nova função
     deleteClient: (id: string) => Promise<void>;
     deletePartner: (id: string) => Promise<void>;
     deleteProject: (id: string) => Promise<void>;
-    // deleteSite removed
     deleteSaaSProduct: (id: string) => Promise<void>;
     deleteUser: (id: string) => Promise<void>;
     deleteLead: (id: string) => Promise<void>;
+    deleteTransaction: (id: string) => Promise<void>; // Nova função
     updatePaymentStatus: (projectId: string, paymentId: string, newStatus: 'Pago' | 'Pendente' | 'Atrasado') => Promise<void>;
     paySubscription: (companyId: string, cardDetails?: { last4: string; expiry: string; }) => Promise<void>;
     recordSubscriptionPayment: (companyId: string) => Promise<void>;

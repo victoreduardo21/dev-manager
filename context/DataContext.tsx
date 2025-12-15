@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
 import Modal from '../components/Modal';
-import type { Client, Partner, Project, SaaSProduct, User, Company, Payment, DataContextType, View, SubscriptionPayment, Lead, ChatMessage, WhatsAppConfig } from '../types';
+import type { Client, Partner, Project, SaaSProduct, User, Company, Payment, DataContextType, View, SubscriptionPayment, Lead, ChatMessage, WhatsAppConfig, Transaction } from '../types';
 import { api } from '../services/api';
 import { RocketLaunchIcon, LockClosedIcon } from '../components/Icons';
 
@@ -45,6 +45,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const [projects, setProjects] = useState<Project[]>([]);
     const [saasProducts, setSaaSProducts] = useState<SaaSProduct[]>([]);
     const [leads, setLeads] = useState<Lead[]>([]);
+    const [transactions, setTransactions] = useState<Transaction[]>([]);
     
     // Config do WhatsApp
     const [whatsappConfig, setWhatsappConfigState] = useState<WhatsAppConfig>({
@@ -85,6 +86,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
                     setProjects([...mappedProjects, ...mappedSites]);
                     setSaaSProducts(db.saasProducts || []);
                     setLeads(db.leads || []);
+                    setTransactions(db.transactions || []);
                 }
             } catch (error) {
                 console.error("Erro fatal no DataContext (Ignorado para manter UI viva):", error);
@@ -153,6 +155,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const filteredSaaSProducts = useMemo(() => filterByCompany(saasProducts), [saasProducts, filterByCompany]);
     const filteredUsers = useMemo(() => filterByCompany(users), [users, filterByCompany]);
     const filteredLeads = useMemo(() => filterByCompany(leads), [leads, filterByCompany]);
+    const filteredTransactions = useMemo(() => filterByCompany(transactions), [transactions, filterByCompany]);
 
     const checkPlanLimits = useCallback((feature: 'projects' | 'users' | 'whatsapp' | 'leadGen' | 'leads'): boolean => {
         return true; 
@@ -309,6 +312,18 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         closeModal();
     }, [activeCompanyId, closeModal]);
 
+    const addTransaction = useCallback(async (data: Omit<Transaction, 'id' | 'companyId'>) => {
+        if (!activeCompanyId) return;
+        const newItem: Transaction = {
+            ...data,
+            id: `trans${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            companyId: activeCompanyId
+        };
+        await api.saveItem('transactions', newItem);
+        setTransactions(prev => [...prev, newItem]);
+        closeModal();
+    }, [activeCompanyId, closeModal]);
+
     const updateGeneric = async (collection: string, item: any, setter: React.Dispatch<React.SetStateAction<any[]>>) => {
         await api.updateItem(collection as any, item);
         setter(prev => prev.map(i => i.id === item.id ? item : i));
@@ -327,6 +342,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         closeModal();
     }), [currentUser, closeModal]);
     const updateLead = useCallback((item: Lead) => updateGeneric('leads', item, setLeads), []);
+    const updateTransaction = useCallback((item: Transaction) => updateGeneric('transactions', item, setTransactions).then(closeModal), [closeModal]);
 
     const deleteGeneric = async (collection: string, id: string, setter: React.Dispatch<React.SetStateAction<any[]>>) => {
         try {
@@ -344,6 +360,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
     const deleteSaaSProduct = useCallback((id: string) => deleteGeneric('saasProducts', id, setSaaSProducts), []);
     const deleteUser = useCallback((id: string) => deleteGeneric('users', id, setUsers), []);
     const deleteLead = useCallback((id: string) => deleteGeneric('leads', id, setLeads), []);
+    const deleteTransaction = useCallback((id: string) => deleteGeneric('transactions', id, setTransactions), []);
 
     const updatePaymentStatus = useCallback(async (projectId: string, paymentId: string, newStatus: 'Pago' | 'Pendente' | 'Atrasado') => {
         setProjects(prevProjects => {
@@ -410,10 +427,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         currentUser,
         activeCompanyName,
         activeCompanyId,
-        clients: filteredClients, partners: filteredPartners, projects: filteredProjects, saasProducts: filteredSaaSProducts, users: filteredUsers, companies: companies, leads: filteredLeads,
-        addClient, addPartner, addProject, addSaaSProduct, addCompany, addUser, addLead,
-        updateClient, updatePartner, updateProject, updateSaaSProduct, updateCompany, updateUser, updateLead,
-        deleteClient, deletePartner, deleteProject, deleteSaaSProduct, deleteUser, deleteLead,
+        clients: filteredClients, partners: filteredPartners, projects: filteredProjects, saasProducts: filteredSaaSProducts, users: filteredUsers, companies: companies, leads: filteredLeads, transactions: filteredTransactions,
+        addClient, addPartner, addProject, addSaaSProduct, addCompany, addUser, addLead, addTransaction,
+        updateClient, updatePartner, updateProject, updateSaaSProduct, updateCompany, updateUser, updateLead, updateTransaction,
+        deleteClient, deletePartner, deleteProject, deleteSaaSProduct, deleteUser, deleteLead, deleteTransaction,
         updatePaymentStatus,
         paySubscription,
         recordSubscriptionPayment,
@@ -425,10 +442,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ currentUser: initial
         sendWhatsAppMessage,
         checkPlanLimits
     }), [
-        currentUser, activeCompanyName, activeCompanyId, filteredClients, filteredPartners, filteredProjects, filteredSaaSProducts, filteredUsers, companies, filteredLeads,
-        addClient, addPartner, addProject, addSaaSProduct, addCompany, addUser, addLead,
-        updateClient, updatePartner, updateProject, updateSaaSProduct, updateCompany, updateUser, updateLead,
-        deleteClient, deletePartner, deleteProject, deleteSaaSProduct, deleteUser, deleteLead,
+        currentUser, activeCompanyName, activeCompanyId, filteredClients, filteredPartners, filteredProjects, filteredSaaSProducts, filteredUsers, companies, filteredLeads, filteredTransactions,
+        addClient, addPartner, addProject, addSaaSProduct, addCompany, addUser, addLead, addTransaction,
+        updateClient, updatePartner, updateProject, updateSaaSProduct, updateCompany, updateUser, updateLead, updateTransaction,
+        deleteClient, deletePartner, deleteProject, deleteSaaSProduct, deleteUser, deleteLead, deleteTransaction,
         updatePaymentStatus, paySubscription, recordSubscriptionPayment, openModal, closeModal, setActiveView, whatsappConfig, setWhatsappConfig, sendWhatsAppMessage, checkPlanLimits
     ]);
 

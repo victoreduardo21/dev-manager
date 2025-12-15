@@ -1,9 +1,9 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import type { Project, Payment } from '../types';
+import type { Project, Payment, Transaction, TransactionStatus } from '../types';
 import { CURRENCY_SYMBOLS } from '../constants';
 import { useData } from '../context/DataContext';
-import { CurrencyDollarIcon, CheckBadgeIcon, ExclamationTriangleIcon, CloudIcon, FunnelIcon, ChartBarIcon, CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import { CurrencyDollarIcon, CheckBadgeIcon, ExclamationTriangleIcon, CloudIcon, FunnelIcon, ChartBarIcon, CalendarIcon, ChevronLeftIcon, ChevronRightIcon, TrashIcon, PlusIcon } from './Icons';
 
 // Helper to format compact numbers
 const formatCompactNumber = (number: number) => {
@@ -114,6 +114,99 @@ const KPICard: React.FC<{
     </div>
 );
 
+// --- Componente Form de Transação Manual ---
+const TransactionForm: React.FC<{
+    onSave: (transaction: Omit<Transaction, 'id' | 'companyId'>) => Promise<void>;
+}> = ({ onSave }) => {
+    const [desc, setDesc] = useState('');
+    const [amount, setAmount] = useState('');
+    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [status, setStatus] = useState<TransactionStatus>('Pendente');
+    const [category, setCategory] = useState('Atualização');
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!desc || !amount || !date) return;
+        
+        setIsSaving(true);
+        await onSave({
+            description: desc,
+            amount: parseFloat(amount),
+            date: date,
+            status: status,
+            category: category
+        });
+        // O modal fecha via contexto
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Descrição</label>
+                <input 
+                    type="text" 
+                    placeholder="Ex: Atualização do Sistema, Consultoria..." 
+                    value={desc} 
+                    onChange={e => setDesc(e.target.value)} 
+                    className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary text-text-primary"
+                />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                     <label className="block text-sm font-medium text-text-secondary mb-1">Valor (R$)</label>
+                     <input 
+                        type="number" 
+                        placeholder="0,00" 
+                        value={amount} 
+                        onChange={e => setAmount(e.target.value)} 
+                        className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md text-text-primary"
+                    />
+                </div>
+                <div>
+                     <label className="block text-sm font-medium text-text-secondary mb-1">Data</label>
+                     <input 
+                        type="date" 
+                        value={date} 
+                        onChange={e => setDate(e.target.value)} 
+                        className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md text-text-primary"
+                    />
+                </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">Status</label>
+                    <select value={status} onChange={e => setStatus(e.target.value as TransactionStatus)} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md text-text-primary">
+                        <option value="Pendente">Pendente</option>
+                        <option value="Pago">Pago</option>
+                        <option value="Atrasado">Atrasado</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-text-secondary mb-1">Categoria</label>
+                    <input 
+                        type="text" 
+                        placeholder="Ex: Manutenção" 
+                        value={category} 
+                        onChange={e => setCategory(e.target.value)} 
+                        className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md text-text-primary"
+                    />
+                </div>
+            </div>
+            <button 
+                type="submit" 
+                disabled={isSaving}
+                className="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary-hover disabled:opacity-50 font-bold"
+            >
+                {isSaving ? 'Salvando...' : 'Adicionar Transação'}
+            </button>
+        </form>
+    );
+};
+
+
 // --- Novo Componente de Seletor de Mês/Ano (Estilo Grade) ---
 
 interface MonthYearPickerProps {
@@ -173,13 +266,13 @@ const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ selectedMonth, select
     return (
         <div className="relative" ref={containerRef}>
             <div className="flex items-center gap-2">
-                <span className="text-sm text-text-secondary mr-1">Período:</span>
+                <span className="text-sm text-text-secondary mr-1 hidden sm:inline">Período:</span>
                 <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="flex items-center justify-between gap-3 bg-surface border border-white/20 hover:border-primary/50 rounded-lg px-4 py-2 text-sm font-medium text-text-primary shadow-sm min-w-[180px] transition-all"
+                    className="flex items-center justify-between gap-3 bg-surface border border-white/20 hover:border-primary/50 rounded-lg px-4 py-2 text-sm font-medium text-text-primary shadow-sm min-w-[160px] transition-all"
                 >
-                    <span className="capitalize">{getDisplayLabel()}</span>
-                    <CalendarIcon className="w-4 h-4 text-primary" />
+                    <span className="capitalize truncate">{getDisplayLabel()}</span>
+                    <CalendarIcon className="w-4 h-4 text-primary shrink-0" />
                 </button>
             </div>
 
@@ -247,7 +340,7 @@ const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ selectedMonth, select
 // --------------------------------------------------------
 
 export default function Financials() {
-  const { projects, clients, updatePaymentStatus, saasProducts } = useData();
+  const { projects, clients, updatePaymentStatus, saasProducts, transactions, addTransaction, updateTransaction, deleteTransaction, openModal } = useData();
   
   const allProjects = projects;
 
@@ -267,6 +360,20 @@ export default function Financials() {
     return clients.find(c => c.id === clientId)?.name || 'N/A';
   }
 
+  const handleAddTransaction = () => {
+      openModal('Adicionar Pagamento / Atualização', <TransactionForm onSave={addTransaction} />);
+  };
+
+  const handleUpdateTransaction = (t: Transaction, newStatus: TransactionStatus) => {
+      updateTransaction({...t, status: newStatus});
+  };
+
+  const handleDeleteTransaction = (id: string) => {
+      if(confirm('Excluir esta transação?')) {
+          deleteTransaction(id);
+      }
+  };
+
   const financialData = useMemo(() => {
       const monthsLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
       const monthlyStats = monthsLabels.map((m, idx) => ({ month: m, value: 0, projected: 0, index: idx }));
@@ -276,62 +383,99 @@ export default function Financials() {
       let filteredPending = 0;
       let filteredOverdue = 0;
 
-      const filteredPaymentsList: { project: Project, payment: Payment }[] = [];
+      // Lista unificada de pagamentos (Projetos + Manuais)
+      const unifiedPayments: Array<{
+          id: string;
+          type: 'Project' | 'Manual';
+          name: string;
+          clientOrDesc: string;
+          date: string;
+          amount: number;
+          status: TransactionStatus;
+          paidDate?: string;
+          category?: string;
+          originalItem: any; // Para referência no update
+      }> = [];
 
+      // 1. Processar Projetos
       allProjects.forEach(parentItem => {
           if (!parentItem.payments || parentItem.payments.length === 0) return;
 
           parentItem.payments.forEach(payment => {
-            let effectiveDate: Date;
-            
-            // CORREÇÃO CRÍTICA DE DATA:
-            // O backend retorna 'YYYY-MM-DD'. Se usarmos new Date('YYYY-MM-DD'), ele considera UTC.
-            // Se o browser estiver em GMT-3, ele volta um dia (ex: dia 01 vira 31 do mês anterior).
-            // Solução: Quebrar a string e criar a data localmente às 12:00.
-            
             const dateString = payment.status === 'Pago' && payment.paidDate ? payment.paidDate : payment.dueDate;
             if (!dateString) return;
 
-            const [yStr, mStr, dStr] = dateString.split('T')[0].split('-');
+            unifiedPayments.push({
+                id: payment.id,
+                type: 'Project',
+                name: parentItem.name,
+                clientOrDesc: getClientName(parentItem.clientId),
+                date: dateString,
+                amount: payment.amount,
+                status: payment.status,
+                paidDate: payment.paidDate,
+                category: parentItem.category,
+                originalItem: { project: parentItem, payment }
+            });
+          });
+      });
+
+      // 2. Processar Transações Manuais
+      transactions.forEach(t => {
+          unifiedPayments.push({
+              id: t.id,
+              type: 'Manual',
+              name: t.description,
+              clientOrDesc: 'Transação Avulsa',
+              date: t.date,
+              amount: t.amount,
+              status: t.status,
+              category: t.category,
+              originalItem: t
+          });
+      });
+
+      // 3. Filtrar e Calcular
+      const filteredPaymentsList: typeof unifiedPayments = [];
+
+      unifiedPayments.forEach(item => {
+            const [yStr, mStr, dStr] = item.date.split('T')[0].split('-');
             const year = parseInt(yStr);
             const monthIdx = parseInt(mStr) - 1; // 0-indexed
-            const day = parseInt(dStr);
 
             // Filtro de Ano
             const isYearMatch = selectedYear === 'all' || year === selectedYear;
 
             if (isYearMatch) {
                 // Soma no Gráfico (Mês correspondente)
-                if (payment.status === 'Pago') {
-                    monthlyStats[monthIdx].value += payment.amount;
-                    yearlyRevenue += payment.amount;
+                if (item.status === 'Pago') {
+                    monthlyStats[monthIdx].value += item.amount;
+                    yearlyRevenue += item.amount;
                 }
                 
-                monthlyStats[monthIdx].projected += payment.amount;
+                monthlyStats[monthIdx].projected += item.amount;
 
                 // Filtro de Mês para os Cards e Lista
                 const isMonthMatch = selectedMonth === 'all' || monthIdx === selectedMonth;
 
                 if (isMonthMatch) {
-                    if (payment.status === 'Pago') filteredRevenue += payment.amount;
-                    else if (payment.status === 'Pendente') filteredPending += payment.amount;
-                    else if (payment.status === 'Atrasado') filteredOverdue += payment.amount;
+                    if (item.status === 'Pago') filteredRevenue += item.amount;
+                    else if (item.status === 'Pendente') filteredPending += item.amount;
+                    else if (item.status === 'Atrasado') filteredOverdue += item.amount;
 
-                    filteredPaymentsList.push({ project: parentItem, payment });
+                    filteredPaymentsList.push(item);
                 }
             }
-          });
       });
 
       filteredPaymentsList.sort((a, b) => {
-          return new Date(a.payment.dueDate).getTime() - new Date(b.payment.dueDate).getTime();
+          return new Date(a.date).getTime() - new Date(b.date).getTime();
       });
 
       const saasMRR = saasProducts.reduce((acc, p) => {
           return acc + p.plans.reduce((sum, plan) => sum + (plan.price * plan.customerCount), 0);
       }, 0);
       
-      // MRR agora considera APENAS SaaS, pois mensalidade de projeto já está nas parcelas
       const totalMRR = Math.round((saasMRR + Number.EPSILON) * 100) / 100;
 
       const currentMonth = new Date().getMonth();
@@ -348,7 +492,7 @@ export default function Financials() {
           totalMRR,
           filteredPaymentsList
       };
-  }, [allProjects, saasProducts, selectedYear, selectedMonth]);
+  }, [allProjects, transactions, saasProducts, selectedYear, selectedMonth]);
 
   const mainCurrency = 'BRL';
   const symbol = CURRENCY_SYMBOLS[mainCurrency];
@@ -362,7 +506,7 @@ export default function Financials() {
             <p className="text-text-secondary">Visão geral de faturamento e fluxo de caixa.</p>
           </div>
           
-          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 w-full md:w-auto">
               <MonthYearPicker 
                 selectedMonth={selectedMonth}
                 selectedYear={selectedYear}
@@ -371,6 +515,13 @@ export default function Financials() {
                     setSelectedYear(y);
                 }}
               />
+              <button 
+                  onClick={handleAddTransaction}
+                  className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-hover flex items-center justify-center gap-2 shadow-lg w-full sm:w-auto font-bold transition-all transform hover:scale-105"
+              >
+                  <PlusIcon className="w-5 h-5" />
+                  Adicionar Pagamento
+              </button>
           </div>
       </div>
       
@@ -431,26 +582,28 @@ export default function Financials() {
             
             <div className="space-y-2 p-4 max-h-[800px] overflow-y-auto custom-scrollbar">
                 {financialData.filteredPaymentsList.length > 0 ? (
-                    financialData.filteredPaymentsList.map(({ project, payment }) => (
-                        <div key={`${project.id}-${payment.id}`} className="border border-white/5 rounded-lg p-4 bg-background/20 hover:bg-background/40 transition-colors flex flex-col md:flex-row justify-between items-center gap-4">
+                    financialData.filteredPaymentsList.map((item) => (
+                        <div key={item.id} className="border border-white/5 rounded-lg p-4 bg-background/20 hover:bg-background/40 transition-colors flex flex-col md:flex-row justify-between items-center gap-4 group">
                             <div className="flex-1">
                                 <div className="flex items-center gap-3">
                                     <div className={`w-2 h-10 rounded-full ${
-                                        payment.status === 'Pago' ? 'bg-emerald-500' : 
-                                        payment.status === 'Atrasado' ? 'bg-red-500' : 'bg-yellow-500'
+                                        item.status === 'Pago' ? 'bg-emerald-500' : 
+                                        item.status === 'Atrasado' ? 'bg-red-500' : 'bg-yellow-500'
                                     }`}></div>
                                     <div>
                                         <h4 className="font-bold text-text-primary flex items-center gap-2">
-                                            {project.name}
+                                            {item.name}
                                             <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                                                project.category === 'Site' 
-                                                ? 'border-purple-500/30 bg-purple-500/10 text-purple-400' 
-                                                : 'border-blue-500/30 bg-blue-500/10 text-blue-400'
+                                                item.type === 'Manual' 
+                                                ? 'border-gray-500/30 bg-gray-500/10 text-gray-400'
+                                                : item.category === 'Site' 
+                                                    ? 'border-purple-500/30 bg-purple-500/10 text-purple-400' 
+                                                    : 'border-blue-500/30 bg-blue-500/10 text-blue-400'
                                             }`}>
-                                                {project.category || 'Geral'}
+                                                {item.type === 'Manual' ? item.category : (item.category || 'Geral')}
                                             </span>
                                         </h4>
-                                        <p className="text-sm text-text-secondary">{getClientName(project.clientId)}</p>
+                                        <p className="text-sm text-text-secondary">{item.clientOrDesc}</p>
                                     </div>
                                 </div>
                             </div>
@@ -458,23 +611,29 @@ export default function Financials() {
                             <div className="flex flex-col md:flex-row gap-6 md:gap-12 items-center w-full md:w-auto">
                                 <div className="text-center md:text-left">
                                     <p className="text-xs text-text-secondary uppercase font-bold">Vencimento</p>
-                                    <p className="text-text-primary font-mono">{new Date(payment.dueDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</p>
+                                    <p className="text-text-primary font-mono">{new Date(item.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</p>
                                 </div>
-                                {payment.status === 'Pago' && payment.paidDate && (
+                                {item.status === 'Pago' && item.paidDate && (
                                     <div className="text-center md:text-left hidden lg:block">
                                         <p className="text-xs text-text-secondary uppercase font-bold">Pago em</p>
-                                        <p className="text-emerald-400 font-mono text-xs">{new Date(payment.paidDate).toLocaleDateString('pt-BR')}</p>
+                                        <p className="text-emerald-400 font-mono text-xs">{new Date(item.paidDate).toLocaleDateString('pt-BR')}</p>
                                     </div>
                                 )}
                                 <div className="text-center md:text-right">
                                     <p className="text-xs text-text-secondary uppercase font-bold">Valor</p>
-                                    <p className="text-text-primary font-bold text-lg">{formatMoney(payment.amount)}</p>
+                                    <p className="text-text-primary font-bold text-lg">{formatMoney(item.amount)}</p>
                                 </div>
                                 
-                                <div className="min-w-[120px] text-right">
-                                    {payment.status !== 'Pago' ? (
+                                <div className="min-w-[120px] text-right flex items-center gap-2">
+                                    {item.status !== 'Pago' ? (
                                         <button 
-                                            onClick={() => updatePaymentStatus(project.id, payment.id, 'Pago')}
+                                            onClick={() => {
+                                                if (item.type === 'Project') {
+                                                    updatePaymentStatus(item.originalItem.project.id, item.originalItem.payment.id, 'Pago');
+                                                } else {
+                                                    handleUpdateTransaction(item.originalItem, 'Pago');
+                                                }
+                                            }}
                                             className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-500 transition-colors text-sm font-bold shadow-lg shadow-emerald-900/20"
                                         >
                                             Receber
@@ -484,6 +643,17 @@ export default function Financials() {
                                             Pago
                                         </span>
                                     )}
+
+                                    {/* Botão de Excluir apenas para manuais */}
+                                    {item.type === 'Manual' && (
+                                        <button 
+                                            onClick={() => handleDeleteTransaction(item.id)}
+                                            className="p-2 text-red-500 hover:bg-red-500/10 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                            title="Excluir Transação"
+                                        >
+                                            <TrashIcon className="w-5 h-5" />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -492,7 +662,7 @@ export default function Financials() {
                     <div className="text-center py-16 flex flex-col items-center justify-center text-text-secondary">
                         <CurrencyDollarIcon className="w-12 h-12 mb-3 opacity-20" />
                         <p>Nenhuma transação encontrada para este período.</p>
-                        <p className="text-sm mt-2 opacity-50">Tente ajustar o filtro de mês.</p>
+                        <p className="text-sm mt-2 opacity-50">Tente ajustar o filtro de mês ou adicione uma nova transação.</p>
                     </div>
                 )}
             </div>
