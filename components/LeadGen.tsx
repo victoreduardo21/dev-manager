@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { MapPinIcon, CheckBadgeIcon, PaperAirplaneIcon, ExclamationTriangleIcon, LockClosedIcon } from './Icons';
@@ -129,10 +128,12 @@ const LeadGen: React.FC = () => {
                                 
                                 if (digitsOnly.length >= 8 && !uniquePhones.has(digitsOnly)) {
                                     if (!languageDetected) {
-                                        if (location.toLowerCase().includes('brasil') || location.toLowerCase().includes('brazil')) {
-                                            setMessageTemplate(MSG_TEMPLATE_PT);
-                                        } else {
+                                        // Padrão: Português. Só muda para EN se detectar explicitamente USA/UK.
+                                        const loc = location.toLowerCase();
+                                        if (loc.includes('usa') || loc.includes('united states') || loc.includes('uk') || loc.includes('england')) {
                                             setMessageTemplate(MSG_TEMPLATE_EN);
+                                        } else {
+                                            setMessageTemplate(MSG_TEMPLATE_PT);
                                         }
                                         languageDetected = true;
                                     }

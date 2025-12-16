@@ -40,8 +40,8 @@ export const PLANS = [
             "Tudo do plano PRO",
             "Usuários Ilimitados",
             "Automação WhatsApp API",
-            "Captação de Leads com IA",
-            "Assistente Financeiro IA",
+            "Captação de Leads Avançada",
+            "Assistente Financeiro Inteligente",
             "Prioridade no Suporte"
         ],
         highlight: false,

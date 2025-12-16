@@ -1,5 +1,5 @@
 {
   "name": "Nexus Manager",
-  "description": "Painel de gerenciamento da Nexus Manager para clientes, parceiros, projetos, websites, produtos SaaS e finanças. Inclui um dashboard para visão geral, seções detalhadas para cada área de gerenciamento e configurações para usuários e empresas.",
+  "description": "Sistema de gerenciamento Nexus Manager para clientes, projetos e finanças.",
   "requestFramePermissions": []
 }

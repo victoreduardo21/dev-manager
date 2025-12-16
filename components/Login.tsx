@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ChevronLeftIcon, CheckBadgeIcon } from './Icons';
 import { PLANS } from '../constants';
@@ -132,15 +131,15 @@ const Login: React.FC<LoginProps> = ({
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
                     </svg>
                 </div>
-                <span className="text-3xl font-bold text-white tracking-wide">Nexus Manager</span>
+                <span className="text-2xl font-bold text-white tracking-wide">Nexus Manager</span>
             </div>
 
             <h1 className="text-5xl font-extrabold text-white mb-6 leading-tight drop-shadow-lg">
-                Gestão Empresarial <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-white">Simples</span>
+                Gerencie sua Agência <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-white">em um só lugar</span>
             </h1>
             <p className="text-xl text-blue-100/80 mb-8 leading-relaxed">
-                Controle total de projetos, finanças e equipe em um único lugar. 
-                Otimize seu fluxo de trabalho sem complicações.
+                Controle total de projetos, finanças e equipe.
+                Excelência e inovação para o seu negócio.
             </p>
         </div>
       </div>
@@ -237,7 +236,7 @@ const Login: React.FC<LoginProps> = ({
                             value={companyName}
                             onChange={(e) => setCompanyName(e.target.value)}
                             className="block w-full rounded-lg border border-slate-300 bg-white text-slate-900 px-4 py-2 focus:border-primary focus:ring-primary outline-none shadow-sm"
-                            placeholder="Ex: Nexus Tech"
+                            placeholder="Ex: Minha Empresa"
                         />
                     </div>
 

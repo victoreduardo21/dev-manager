@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { 
     ChartBarIcon, UsersIcon, FolderIcon, PhoneIcon, CheckBadgeIcon, 
@@ -18,7 +17,7 @@ const SystemDashboardMockup = () => (
             <div className="w-3 h-3 rounded-full bg-red-400"></div>
             <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
             <div className="w-3 h-3 rounded-full bg-green-400"></div>
-            <div className="ml-4 bg-white px-3 py-1 rounded text-xs text-slate-400 flex-1 border border-slate-200">nexusmanager.app/dashboard</div>
+            <div className="ml-4 bg-white px-3 py-1 rounded text-xs text-slate-400 flex-1 border border-slate-200">nexus.app/dashboard</div>
         </div>
         
         <div className="flex h-[400px] md:h-[500px]">
@@ -201,7 +200,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
                             </svg>
                         </div>
-                        <span className="text-2xl font-bold tracking-tight text-slate-900">Nexus<span className="text-blue-600">Manager</span></span>
+                        <span className="text-2xl font-bold tracking-tight text-slate-900">Nexus Manager</span>
                     </div>
                     <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
                         <button onClick={() => scrollToSection('features')} className="hover:text-blue-600 transition-colors">Funcionalidades</button>
@@ -358,8 +357,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                             icon={<PhoneIcon className="w-6 h-6" />}
                         />
                         <FeatureCard 
-                            title="Captação de Leads IA" 
-                            desc="Utilize Inteligência Artificial para varrer a web e encontrar empresas locais com base em nicho e localização."
+                            title="Captação de Leads" 
+                            desc="Utilize tecnologia avançada para varrer a web e encontrar empresas locais com base em nicho e localização."
                             icon={<CloudIcon className="w-6 h-6" />}
                         />
                         <FeatureCard 
@@ -420,8 +419,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                                 "Tudo do plano PRO",
                                 "Usuários Ilimitados",
                                 "Automação WhatsApp API",
-                                "Captação de Leads com IA",
-                                "Assistente Financeiro IA",
+                                "Captação de Leads Avançada",
+                                "Assistente Financeiro Inteligente",
                                 "Prioridade no Suporte"
                             ]}
                             onClick={() => onEnterApp('VIP', billingCycle)}
