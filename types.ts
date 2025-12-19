@@ -2,7 +2,7 @@
 // Fix: Import React to resolve "Cannot find namespace 'React'" error.
 import React from 'react';
 
-export type View = 'Dashboard' | 'CRM' | 'Captação' | 'Clientes' | 'Parceiros' | 'Projetos' | 'SaaS' | 'Financeiro' | 'Empresas' | 'Usuários' | 'Configuração' | 'Assinatura' | 'Gerenciar Assinaturas';
+export type View = 'Dashboard' | 'CRM' | 'Captação' | 'Clientes' | 'Parceiros' | 'Projetos' | 'SaaS' | 'Financeiro' | 'Empresas' | 'Usuários' | 'Configuração' | 'Assinatura' | 'Gerenciar Assinaturas' | 'Relatórios';
 
 export type Currency = 'BRL' | 'USD' | 'EUR';
 export type ProjectStatus = 'Pendente' | 'Em Andamento' | 'Concluído' | 'Atrasado';
@@ -37,11 +37,10 @@ export interface Payment {
     id: string;
     amount: number;
     dueDate: string;
-    paidDate?: string; // Data real do recebimento
+    paidDate?: string; 
     status: TransactionStatus;
 }
 
-// Transações Manuais (Novas Entradas)
 export interface Transaction {
     id: string;
     companyId: string;
@@ -49,7 +48,7 @@ export interface Transaction {
     amount: number;
     date: string;
     status: TransactionStatus;
-    category: string; // Ex: 'Atualização', 'Manutenção', 'Consultoria Avulsa'
+    category: string; 
 }
 
 export interface Activity {
@@ -63,13 +62,13 @@ export interface Project {
   companyId: string;
   name: string;
   description: string;
-  category: ProjectCategory; // Novo campo para diferenciar Site de Sistema, etc.
+  category: ProjectCategory; 
   clientId: string;
   value: number;
   downPayment: number;
   installments: number;
   currency: Currency;
-  firstPaymentDate?: string; // Nova data escolhida manualmente para o primeiro vencimento
+  firstPaymentDate?: string; 
   hasRetainer: boolean;
   retainerValue?: number;
   assignedPartnerIds: string[];
@@ -80,8 +79,6 @@ export interface Project {
   payments: Payment[];
   activities: Activity[];
 }
-
-// Site type removed as it is merged into Project
 
 export interface SaaSPlan {
   id: string;
@@ -102,7 +99,7 @@ export interface User {
     companyId: string;
     name: string;
     email: string;
-    password?: string; // Should not be sent to client in real app
+    password?: string; 
     role: UserRole;
     phone?: string;
     cpf?: string;
@@ -112,7 +109,7 @@ export interface SubscriptionPayment {
     id: string;
     date: string;
     amount: number;
-    paymentMethod?: string; // Optional info
+    paymentMethod?: string; 
 }
 
 export interface Company {
@@ -126,8 +123,8 @@ export interface Company {
     currency: Currency;
     subscriptionStatus: SubscriptionStatus;
     subscriptionDueDate: string;
-    plan?: string; // Novo campo para armazenar o nome do plano (Starter, Professional, etc)
-    billingCycle?: BillingCycle; // Mensal ou Anual
+    plan?: string; 
+    billingCycle?: BillingCycle; 
     paymentHistory: SubscriptionPayment[];
     savedCard?: {
         last4: string;
@@ -145,12 +142,12 @@ export interface ChatMessage {
 export interface Lead {
     id: string;
     companyId: string;
-    name: string; // Name of the business or contact
+    name: string; 
     email?: string;
     phone: string;
     address?: string;
     status: LeadStatus;
-    source: string; // e.g., "Google Maps", "Manual", "Indicação"
+    source: string; 
     notes?: string;
     createdAt: string;
     messages: ChatMessage[];
@@ -174,7 +171,7 @@ export interface DataContextType {
     users: User[];
     companies: Company[];
     leads: Lead[];
-    transactions: Transaction[]; // Nova lista
+    transactions: Transaction[]; 
     whatsappConfig: WhatsAppConfig;
     setWhatsappConfig: (config: WhatsAppConfig) => void;
     addClient: (client: Omit<Client, 'id' | 'companyId'>) => Promise<void>;
@@ -182,9 +179,9 @@ export interface DataContextType {
     addProject: (project: Omit<Project, 'id' | 'payments' | 'status' | 'progress' | 'activities' | 'companyId'>) => Promise<void>;
     addSaaSProduct: (product: Omit<SaaSProduct, 'id'| 'companyId'>) => Promise<void>;
     addCompany: (companyData: Omit<Company, 'id' | 'subscriptionDueDate' | 'paymentHistory'> & { adminUser: { name: string; email: string; phone: string } }) => Promise<void>;
-    addUser: (user: Omit<User, 'id'>) => Promise<void>; // Removido 'password' do Omit para permitir envio
+    addUser: (user: Omit<User, 'id'>) => Promise<void>; 
     addLead: (lead: Omit<Lead, 'id' | 'companyId' | 'createdAt' | 'messages'> & { messages?: ChatMessage[] }) => Promise<void>;
-    addTransaction: (transaction: Omit<Transaction, 'id' | 'companyId'>) => Promise<void>; // Nova função
+    addTransaction: (transaction: Omit<Transaction, 'id' | 'companyId'>) => Promise<void>; 
     updateClient: (client: Client) => Promise<void>;
     updatePartner: (partner: Partner) => Promise<void>;
     updateProject: (project: Project) => Promise<void>;
@@ -192,14 +189,14 @@ export interface DataContextType {
     updateCompany: (company: Company) => Promise<void>;
     updateUser: (user: User) => Promise<void>;
     updateLead: (lead: Lead) => Promise<void>;
-    updateTransaction: (transaction: Transaction) => Promise<void>; // Nova função
+    updateTransaction: (transaction: Transaction) => Promise<void>; 
     deleteClient: (id: string) => Promise<void>;
     deletePartner: (id: string) => Promise<void>;
     deleteProject: (id: string) => Promise<void>;
     deleteSaaSProduct: (id: string) => Promise<void>;
     deleteUser: (id: string) => Promise<void>;
     deleteLead: (id: string) => Promise<void>;
-    deleteTransaction: (id: string) => Promise<void>; // Nova função
+    deleteTransaction: (id: string) => Promise<void>; 
     updatePaymentStatus: (projectId: string, paymentId: string, newStatus: 'Pago' | 'Pendente' | 'Atrasado') => Promise<void>;
     paySubscription: (companyId: string, cardDetails?: { last4: string; expiry: string; }) => Promise<void>;
     recordSubscriptionPayment: (companyId: string) => Promise<void>;

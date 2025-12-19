@@ -14,10 +14,11 @@ import ErrorBoundary from './components/ErrorBoundary';
 import CRM from './components/CRM';
 import Companies from './components/Companies';
 import LeadGen from './components/LeadGen';
-import Subscription from './components/Subscription';
 import AdminSubscriptionManager from './components/AdminSubscriptionManager';
 import LandingPage from './components/LandingPage';
+import AdvancedReports from './components/AdvancedReports';
 import { DataProvider } from './context/DataContext';
+import { RocketLaunchIcon } from './components/Icons';
 import type { View, User, Company, BillingCycle } from './types';
 import { api } from './services/api';
 
@@ -28,17 +29,11 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Estado para controlar navegação entre Landing Page e Login
   const [showLogin, setShowLogin] = useState(false);
-  
-  // Estado para armazenar o plano e ciclo selecionado no site
   const [selectedPlan, setSelectedPlan] = useState<string>('Starter');
   const [selectedCycle, setSelectedCycle] = useState<BillingCycle>('monthly');
-  
-  // Estado para controlar se abre Login ou Cadastro (register)
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
 
-  // Tentar restaurar sessão
   useEffect(() => {
     const storedUser = localStorage.getItem('nexus_current_user');
     if (storedUser) {
@@ -57,13 +52,11 @@ const App: React.FC = () => {
         }
         return false;
     } catch (error) {
-        console.error(error);
         return false;
     }
   };
 
   const handleRegister = async (userData: any): Promise<void> => {
-      // Chama o backend para criar empresa e usuário, injetando o plano e ciclo selecionado
       await api.register({ 
           ...userData, 
           plan: selectedPlan,
@@ -75,7 +68,7 @@ const App: React.FC = () => {
     setCurrentUser(null);
     setImpersonatedCompany(null);
     setActiveView('Dashboard');
-    setShowLogin(false); // Volta para o site ao sair
+    setShowLogin(false);
     localStorage.removeItem('nexus_current_user');
   };
 
@@ -94,6 +87,7 @@ const App: React.FC = () => {
       case 'Dashboard': return <Dashboard />;
       case 'CRM': return <CRM />;
       case 'Captação': return <LeadGen />;
+      case 'Relatórios': return <AdvancedReports />;
       case 'Clientes': return <Clients />;
       case 'Parceiros': return <Partners />;
       case 'Projetos': return <ProjectManager />;
@@ -102,7 +96,6 @@ const App: React.FC = () => {
       case 'Empresas': return <Companies onImpersonate={handleImpersonate} />;
       case 'Usuários': return <Users />;
       case 'Configuração': return <Settings />;
-      case 'Assinatura': return <Subscription />;
       case 'Gerenciar Assinaturas': return <AdminSubscriptionManager />;
       default: return <Dashboard />;
     }
@@ -117,7 +110,7 @@ const App: React.FC = () => {
                 onLogin={handleLogin} 
                 onRegister={handleRegister} 
                 onBack={() => setShowLogin(false)}
-                initialView={authMode} // Passa o modo (login ou register)
+                initialView={authMode}
                 selectedPlan={selectedPlan}
                 billingCycle={selectedCycle}
             />
@@ -129,9 +122,9 @@ const App: React.FC = () => {
                 if (plan) {
                     setSelectedPlan(plan);
                     if (cycle) setSelectedCycle(cycle);
-                    setAuthMode('register'); // Se tem plano, vai para cadastro
+                    setAuthMode('register');
                 } else {
-                    setAuthMode('login'); // Se não tem plano, vai para login
+                    setAuthMode('login');
                 }
                 setShowLogin(true);
             }} 
@@ -155,27 +148,25 @@ const App: React.FC = () => {
             onClose={() => setIsSidebarOpen(false)}
         />
         <div className="flex-1 flex flex-col w-full h-full relative overflow-hidden">
-            {/* Header com Menu Hamburger - Visível em telas < XL (Tablets e Mobile) */}
             <header className="xl:hidden bg-[#020617] border-b border-white/10 flex items-center justify-between p-4 sticky top-0 z-30 shadow-md shrink-0">
-                <button 
-                    onClick={() => setIsSidebarOpen(true)} 
-                    className="text-white p-1 hover:bg-white/10 rounded focus:outline-none"
-                    aria-label="Abrir Menu"
-                >
+                <button onClick={() => setIsSidebarOpen(true)} className="text-white p-1 hover:bg-white/10 rounded">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
                 </button>
-                <h1 className="text-lg font-bold text-white truncate px-2">{activeView}</h1>
-                <div className="w-8">
-                     {/* Espaço reservado para balancear o layout do header */}
+                <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
+                        <RocketLaunchIcon className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-sm font-black text-white uppercase tracking-tighter">NEXUS<span className="text-blue-600">MANAGER</span></span>
                 </div>
+                <div className="w-8"></div>
             </header>
 
             {impersonatedCompany && (
-                <div className="bg-yellow-500 text-black text-center p-2 font-bold flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4 shadow-sm z-20 shrink-0">
+                <div className="bg-yellow-500 text-black text-center p-2 font-bold flex justify-center items-center gap-4 shadow-sm z-20 shrink-0">
                     <span className="text-sm">Visualizando como {impersonatedCompany.name}</span>
-                    <button onClick={handleStopImpersonating} className="bg-black/20 text-white px-3 py-1 rounded-md text-xs hover:bg-black/40 whitespace-nowrap">
+                    <button onClick={handleStopImpersonating} className="bg-black/20 text-white px-3 py-1 rounded-md text-xs hover:bg-black/40">
                         Voltar para Visão SuperAdmin
                     </button>
                 </div>
@@ -183,9 +174,11 @@ const App: React.FC = () => {
             
             <main className="flex-1 p-4 sm:p-6 overflow-y-auto bg-slate-50 w-full custom-scrollbar">
                 <div className="max-w-7xl mx-auto w-full">
-                    <ErrorBoundary key={activeView}>
-                        {renderView()}
-                    </ErrorBoundary>
+                    <div key={activeView}>
+                        <ErrorBoundary>
+                            {renderView()}
+                        </ErrorBoundary>
+                    </div>
                 </div>
             </main>
         </div>

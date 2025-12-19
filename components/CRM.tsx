@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import type { Lead, LeadStatus, ChatMessage } from '../types';
-import { PhoneIcon, MailIcon, MapPinIcon, ChatBubbleLeftRightIcon, PaperAirplaneIcon } from './Icons';
+import { PhoneIcon, MailIcon, MapPinIcon, ChatBubbleLeftRightIcon, PaperAirplaneIcon, TrashIcon } from './Icons';
 
 const statusColumns: LeadStatus[] = ['Novo', 'Contatado', 'Qualificado', 'Proposta', 'Ganho', 'Perdido'];
 
@@ -96,7 +96,8 @@ const LeadChat: React.FC<{ lead: Lead, onSendMessage: (text: string) => Promise<
 const LeadDetailsModal: React.FC<{ 
     lead?: Lead; 
     onSave: (lead: Omit<Lead, 'id' | 'companyId' | 'createdAt'> | Lead) => Promise<void>; 
-}> = ({ lead, onSave }) => {
+    onDelete?: (id: string) => void;
+}> = ({ lead, onSave, onDelete }) => {
     const [activeTab, setActiveTab] = useState<'info' | 'whatsapp'>('info');
     const [formData, setFormData] = useState({
         name: lead?.name || '',
@@ -138,19 +139,30 @@ const LeadDetailsModal: React.FC<{
 
     return (
         <div>
-            <div className="flex border-b border-white/10 mb-4">
-                <button 
-                    className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${activeTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
-                    onClick={() => setActiveTab('info')}
-                >
-                    Dados do Lead
-                </button>
-                {lead && (
+            <div className="flex justify-between items-center border-b border-white/10 mb-4">
+                <div className="flex">
                     <button 
-                        className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'whatsapp' ? 'border-green-500 text-green-500' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
-                        onClick={() => setActiveTab('whatsapp')}
+                        className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${activeTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
+                        onClick={() => setActiveTab('info')}
                     >
-                        <ChatBubbleLeftRightIcon className="w-4 h-4" /> WhatsApp / Chat
+                        Dados do Lead
+                    </button>
+                    {lead && (
+                        <button 
+                            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'whatsapp' ? 'border-green-500 text-green-500' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
+                            onClick={() => setActiveTab('whatsapp')}
+                        >
+                            <ChatBubbleLeftRightIcon className="w-4 h-4" /> WhatsApp / Chat
+                        </button>
+                    )}
+                </div>
+                {lead && onDelete && (
+                    <button 
+                        onClick={() => { if(confirm('Excluir este lead permanentemente?')) onDelete(lead.id); }}
+                        className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title="Excluir Lead"
+                    >
+                        <TrashIcon className="w-5 h-5" />
                     </button>
                 )}
             </div>
@@ -179,7 +191,7 @@ const LeadDetailsModal: React.FC<{
 
 
 const CRM: React.FC = () => {
-    const { leads, addLead, updateLead, openModal, checkPlanLimits } = useData();
+    const { leads, addLead, updateLead, deleteLead, openModal, closeModal, checkPlanLimits } = useData();
 
     const handleAddClick = () => {
         if (checkPlanLimits('leads')) {
@@ -188,7 +200,7 @@ const CRM: React.FC = () => {
     };
 
     const handleCardClick = (lead: Lead) => {
-        openModal(lead.name, <LeadDetailsModal onSave={updateLead} lead={lead} />);
+        openModal(lead.name, <LeadDetailsModal onSave={updateLead} lead={lead} onDelete={(id) => { deleteLead(id); closeModal(); }} />);
     };
     
     const handleMoveStatus = async (e: React.MouseEvent, lead: Lead, direction: 'next' | 'prev') => {

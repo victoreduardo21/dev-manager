@@ -1,37 +1,52 @@
-import React, { Component, type ErrorInfo, type ReactNode } from "react";
+
+import React from "react";
 import { ExclamationTriangleIcon } from "./Icons";
 
+// Define Props interface for the ErrorBoundary.
 interface Props {
-  children?: ReactNode;
+  children?: React.ReactNode;
 }
 
+// Define State interface for the ErrorBoundary.
 interface State {
   hasError: boolean;
   error: Error | null;
 }
 
-class ErrorBoundary extends Component<Props, State> {
+/**
+ * ErrorBoundary class component to catch rendering errors in its child tree.
+ */
+// Fix: Explicitly use React.Component to ensure TypeScript correctly recognizes inherited properties like state and props.
+class ErrorBoundary extends React.Component<Props, State> {
+  // Use a constructor for explicit state initialization and base class setup.
   constructor(props: Props) {
     super(props);
+    // Fix: Correctly initialize state on this.state which is inherited from React.Component.
     this.state = {
       hasError: false,
       error: null,
     };
   }
 
-  public static getDerivedStateFromError(error: Error): Partial<State> {
+  // Standard React Error Boundary static method to update state when an error occurs.
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  // Log error details using React.ErrorInfo type for debugging purposes.
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
   }
 
-  public handleRetry = () => {
+  // Reset state to allow the UI to recover from the error state.
+  handleRetry = () => {
+    // Fix: Correctly call this.setState inherited from React.Component.
     this.setState({ hasError: false, error: null });
   };
 
-  public render() {
+  render() {
+    // Check error state using this.state.
+    // Fix: Access this.state inherited from React.Component.
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-surface rounded-lg border border-white/10">
@@ -53,6 +68,8 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
+    // Access children from this.props inherited from React.Component.
+    // Fix: Access this.props inherited from React.Component.
     return this.props.children;
   }
 }

@@ -12,39 +12,67 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
 
 export const PLANS = [
     {
-        name: 'PRO',
-        price: {
-            monthly: 200.00,
-            yearly: 2000.00
+        name: 'Starter',
+        price: { monthly: 97.00, yearly: 970.00 },
+        description: 'A base sólida para quem está começando agora.',
+        limits: {
+            users: 1,
+            leads: 50,
+            hasWhatsApp: false,
+            hasLeadGen: false,
+            hasAdvancedReports: false
         },
-        description: 'Ideal para profissionais que buscam crescimento.',
+        features: [
+            "CRM de Vendas (Até 50 Leads/Semana)",
+            "Gestão de Projetos Básica",
+            "1 Usuário Admin",
+            "Relatórios Financeiros Simples",
+            "Suporte via Email"
+        ],
+        highlight: false
+    },
+    {
+        name: 'PRO',
+        price: { monthly: 200.00, yearly: 2000.00 },
+        description: 'Potência máxima para profissionais em ascensão.',
+        limits: {
+            users: 3,
+            leads: 999999,
+            hasWhatsApp: false,
+            hasLeadGen: false,
+            hasAdvancedReports: true
+        },
         features: [
             "CRM de Vendas Ilimitado",
-            "Gestão de Projetos Ilimitada",
-            "Até 3 Usuários",
-            "Agenda Financeira",
-            "Relatórios Avançados",
-            "Sem Automação de WhatsApp"
+            "Gestão de Projetos Completa",
+            "Até 3 Usuários na Equipe",
+            "Agenda Financeira & Fluxo de Caixa",
+            "Relatórios de Performance Avançados",
+            "Prioridade no Suporte"
         ],
         highlight: true,
-        tag: 'Recomendado'
+        tag: 'Mais Vendido'
     },
     {
         name: 'VIP',
-        price: {
-            monthly: 500.00,
-            yearly: 5000.00
+        price: { monthly: 1000.00, yearly: 10000.00 },
+        description: 'A solução definitiva para escalar e automatizar.',
+        limits: {
+            users: 999999,
+            leads: 999999,
+            hasWhatsApp: true,
+            hasLeadGen: true,
+            hasAdvancedReports: true
         },
-        description: 'Controle total e automação para sua empresa.',
         features: [
             "Tudo do plano PRO",
-            "Usuários Ilimitados",
-            "Automação WhatsApp API",
-            "Captação de Leads Avançada",
-            "Assistente Financeiro Inteligente",
-            "Prioridade no Suporte"
+            "Equipe Ilimitada",
+            "Automação WhatsApp API Nativa",
+            "Captação de Leads IA (Deep Search)",
+            "Gerente de Contas Dedicado",
+            "Acesso Antecipado a Recursos"
         ],
         highlight: false,
-        tag: 'Exclusivo'
+        tag: 'Elite'
     }
 ];

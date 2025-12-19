@@ -1,173 +1,63 @@
+
 import React, { useEffect, useState } from 'react';
 import { 
     ChartBarIcon, UsersIcon, FolderIcon, PhoneIcon, CheckBadgeIcon, 
-    CloudIcon, ChevronRightIcon, FunnelIcon, CurrencyDollarIcon
+    CloudIcon, ChevronRightIcon, FunnelIcon, CurrencyDollarIcon,
+    RocketLaunchIcon, MapPinIcon, ChatBubbleLeftRightIcon,
+    ExclamationTriangleIcon, StarIcon, ShieldCheckIcon, BoltIcon,
+    GlobeAltIcon
 } from './Icons';
+import { PLANS } from '../constants';
 import type { BillingCycle } from '../types';
 
 interface LandingPageProps {
     onEnterApp: (plan?: string, billingCycle?: BillingCycle) => void;
 }
 
-// --- Componentes Visuais (Mockups do Sistema) ---
-const SystemDashboardMockup = () => (
-    <div className="bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden transform transition-all hover:scale-[1.01] duration-500">
-        {/* Fake Browser Header */}
-        <div className="bg-slate-100 border-b border-slate-200 px-4 py-3 flex gap-2 items-center">
-            <div className="w-3 h-3 rounded-full bg-red-400"></div>
-            <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-            <div className="w-3 h-3 rounded-full bg-green-400"></div>
-            <div className="ml-4 bg-white px-3 py-1 rounded text-xs text-slate-400 flex-1 border border-slate-200">nexus.app/dashboard</div>
+// --- Sub-componentes de Conteúdo ---
+
+const TestimonialCard: React.FC<{ name: string; role: string; text: string; avatar: string }> = ({ name, role, text, avatar }) => (
+    <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300">
+        <div className="flex gap-1 text-amber-400 mb-4">
+            {[1, 2, 3, 4, 5].map(i => <StarIcon key={i} className="w-5 h-5 fill-current" />)}
         </div>
-        
-        <div className="flex h-[400px] md:h-[500px]">
-            {/* Fake Sidebar */}
-            <div className="w-16 md:w-56 bg-[#020617] p-4 flex flex-col gap-4 text-slate-400 border-r border-slate-800">
-                <div className="h-8 w-8 md:w-auto bg-blue-600 rounded-lg mb-4 flex items-center justify-center text-white font-bold">
-                    <span className="hidden md:inline ml-2">Nexus</span>
-                    <span className="md:hidden">N</span>
-                </div>
-                <div className="h-2 w-full bg-slate-800 rounded opacity-20 mb-2"></div>
-                <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-white bg-blue-600/20 p-2 rounded-lg border border-blue-600/30">
-                        <div className="w-4 h-4 bg-blue-500 rounded-full shrink-0"></div>
-                        <div className="h-2 w-20 bg-blue-200 rounded hidden md:block"></div>
-                    </div>
-                    {[1, 2, 3, 4].map(i => (
-                        <div key={i} className="flex items-center gap-3 p-2">
-                            <div className="w-4 h-4 bg-slate-700 rounded-full shrink-0"></div>
-                            <div className="h-2 w-16 bg-slate-700 rounded hidden md:block"></div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Fake Main Content */}
-            <div className="flex-1 bg-slate-50 p-6 overflow-hidden relative">
-                <div className="flex justify-between items-center mb-6">
-                    <div className="h-6 w-32 bg-slate-200 rounded"></div>
-                    <div className="h-8 w-24 bg-blue-600 rounded shadow-lg shadow-blue-600/20"></div>
-                </div>
-
-                {/* KPI Cards */}
-                <div className="grid grid-cols-3 gap-4 mb-6">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-                            <div className="h-3 w-12 bg-slate-100 rounded mb-2"></div>
-                            <div className="h-6 w-20 bg-slate-800 rounded"></div>
-                        </div>
-                    ))}
-                </div>
-
-                {/* Chart Area */}
-                <div className="flex gap-4 h-full">
-                    <div className="flex-1 bg-white p-4 rounded-lg border border-slate-200 shadow-sm relative">
-                         <div className="absolute bottom-0 left-0 right-0 h-32 flex items-end justify-between px-6 pb-6 gap-2">
-                            {[40, 70, 45, 90, 60, 80, 50, 75].map((h, idx) => (
-                                <div key={idx} className="w-full bg-blue-500/20 rounded-t hover:bg-blue-500 transition-colors duration-300" style={{height: `${h}%`}}></div>
-                            ))}
-                         </div>
-                    </div>
-                    <div className="w-1/3 bg-white p-4 rounded-lg border border-slate-200 shadow-sm hidden lg:block">
-                        <div className="space-y-3">
-                            {[1, 2, 3, 4].map(i => (
-                                <div key={i} className="flex items-center gap-2 border-b border-slate-50 pb-2">
-                                    <div className="w-8 h-8 rounded-full bg-slate-100"></div>
-                                    <div className="flex-1">
-                                        <div className="h-2 w-full bg-slate-100 rounded mb-1"></div>
-                                        <div className="h-2 w-1/2 bg-slate-100 rounded"></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+        <p className="text-slate-600 italic mb-6 leading-relaxed">"{text}"</p>
+        <div className="flex items-center gap-4">
+            <img src={avatar} alt={name} className="w-12 h-12 rounded-full border-2 border-blue-100 shadow-sm" />
+            <div>
+                <h4 className="font-bold text-slate-900">{name}</h4>
+                <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{role}</p>
             </div>
         </div>
     </div>
 );
 
-const KanbanMockup = () => (
-    <div className="bg-slate-900 p-4 rounded-xl border border-slate-700 shadow-2xl w-full max-w-sm mx-auto transform rotate-3 hover:rotate-0 transition-transform duration-500">
-        <div className="flex items-center gap-2 mb-4">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <div className="h-2 w-20 bg-slate-700 rounded"></div>
-        </div>
-        <div className="space-y-3">
-            <div className="bg-slate-800 p-3 rounded border-l-4 border-blue-500">
-                <div className="h-2 w-16 bg-slate-600 rounded mb-2"></div>
-                <div className="h-2 w-full bg-slate-700 rounded"></div>
-            </div>
-            <div className="bg-slate-800 p-3 rounded border-l-4 border-yellow-500">
-                <div className="h-2 w-16 bg-slate-600 rounded mb-2"></div>
-                <div className="h-2 w-24 bg-slate-700 rounded"></div>
-            </div>
-             <div className="bg-slate-800 p-3 rounded border-l-4 border-green-500">
-                <div className="h-2 w-16 bg-slate-600 rounded mb-2"></div>
-                <div className="h-2 w-20 bg-slate-700 rounded"></div>
-            </div>
-        </div>
-    </div>
-);
-
-const FeatureCard: React.FC<{ title: string; desc: string; icon: React.ReactNode }> = ({ title, desc, icon }) => (
-    <div className="bg-white border border-slate-200 p-6 rounded-2xl hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-300 group hover:-translate-y-1">
-        <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 mb-4 group-hover:scale-110 transition-transform">
+const FeatureItem: React.FC<{ title: string; desc: string; icon: React.ReactNode; color: string }> = ({ title, desc, icon, color }) => (
+    <div className="bg-white border border-slate-100 p-8 rounded-[32px] hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-500 group hover:-translate-y-2">
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-all duration-500 ${color} group-hover:scale-110 shadow-sm`}>
             {icon}
         </div>
-        <h3 className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
-        <p className="text-slate-500 leading-relaxed">{desc}</p>
+        <h3 className="text-xl font-black text-slate-900 mb-3 tracking-tight">{title}</h3>
+        <p className="text-slate-500 leading-relaxed text-sm">{desc}</p>
     </div>
 );
 
-const PricingCard: React.FC<{ 
-    title: string; 
-    price: string; 
-    period: string;
-    desc: string; 
-    features: string[]; 
-    isPopular?: boolean;
-    buttonText?: string;
-    onClick: () => void;
-}> = ({ title, price, period, desc, features, isPopular, buttonText = "Escolher Plano", onClick }) => (
-    <div className={`relative p-8 rounded-2xl border transition-all duration-300 flex flex-col h-full ${
-        isPopular 
-            ? 'bg-white border-blue-500 shadow-2xl shadow-blue-200/50 scale-105 z-10' 
-            : 'bg-white border-slate-200 hover:border-blue-200 hover:shadow-lg'
-    }`}>
-        {isPopular && (
-            <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-xl">
-                MAIS POPULAR
+const FaqItem: React.FC<{ question: string; answer: string }> = ({ question, answer }) => {
+    const [open, setOpen] = useState(false);
+    return (
+        <div className="border-b border-slate-200 py-6 last:border-0">
+            <button onClick={() => setOpen(!open)} className="w-full flex justify-between items-center text-left gap-4 group">
+                <span className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{question}</span>
+                <span className={`text-2xl transition-transform duration-300 text-blue-600 ${open ? 'rotate-45' : ''}`}>+</span>
+            </button>
+            <div className={`grid transition-all duration-300 overflow-hidden ${open ? 'grid-rows-[1fr] mt-4' : 'grid-rows-[0fr]'}`}>
+                <p className="min-h-0 text-slate-500 text-sm leading-relaxed">{answer}</p>
             </div>
-        )}
-        <h3 className="text-xl font-bold text-slate-900 mb-2">{title}</h3>
-        <div className="flex items-baseline gap-1 mb-1">
-            <span className="text-4xl font-bold text-slate-900">{price}</span>
-            <span className="text-lg text-slate-500">{period}</span>
         </div>
-        <p className={`text-sm mb-6 ${isPopular ? 'text-blue-600' : 'text-slate-500'}`}>{desc}</p>
-        
-        <button 
-            onClick={onClick}
-            className={`w-full py-3 rounded-lg font-bold transition-all mb-8 ${
-                isPopular 
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20' 
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-900'
-            }`}
-        >
-            {buttonText}
-        </button>
+    );
+};
 
-        <ul className="space-y-4 flex-1">
-            {features.map((feat, idx) => (
-                <li key={idx} className="flex items-start gap-3 text-sm text-slate-600">
-                    <CheckBadgeIcon className={`w-5 h-5 shrink-0 ${isPopular ? 'text-blue-500' : 'text-slate-400'}`} />
-                    <span>{feat}</span>
-                </li>
-            ))}
-        </ul>
-    </div>
-);
+// --- Componente Principal ---
 
 const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
     const [scrolled, setScrolled] = useState(false);
@@ -179,312 +69,179 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    const scrollToSection = (id: string) => {
-        const element = document.getElementById(id);
-        if (element) {
-            // Ajuste de offset para não ficar escondido atrás da navbar fixa
-            const y = element.getBoundingClientRect().top + window.pageYOffset - 100;
+    const scrollTo = (id: string) => {
+        const el = document.getElementById(id);
+        if (el) {
+            const y = el.getBoundingClientRect().top + window.pageYOffset - 100;
             window.scrollTo({ top: y, behavior: 'smooth' });
         }
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 overflow-x-hidden selection:bg-blue-500 selection:text-white font-sans">
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-600 selection:text-white">
             {/* Navbar */}
-            <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md border-b border-slate-200 py-4 shadow-sm' : 'bg-transparent py-6'}`}>
+            <nav className={`fixed w-full z-50 transition-all duration-500 ${scrolled ? 'bg-white/90 backdrop-blur-xl border-b border-slate-200 py-3 shadow-lg' : 'bg-transparent py-6'}`}>
                 <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
-                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                            {/* Logo Atualizada (System Icon) */}
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
-                            </svg>
+                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
+                        <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                            <RocketLaunchIcon className="w-6 h-6 text-white" />
                         </div>
-                        <span className="text-2xl font-bold tracking-tight text-slate-900">Nexus Manager</span>
+                        <span className="text-2xl font-black tracking-tighter text-slate-900">NEXUS<span className="text-blue-600">MANAGER</span></span>
                     </div>
-                    <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-                        <button onClick={() => scrollToSection('features')} className="hover:text-blue-600 transition-colors">Funcionalidades</button>
-                        <button onClick={() => scrollToSection('benefits')} className="hover:text-blue-600 transition-colors">Benefícios</button>
-                        <button onClick={() => scrollToSection('pricing')} className="hover:text-blue-600 transition-colors">Planos</button>
-                        <button 
-                            onClick={() => onEnterApp()} 
-                            className="text-slate-900 font-bold hover:text-blue-600 transition-colors"
-                        >
-                            Fazer Login
-                        </button>
+                    <div className="hidden md:flex items-center gap-10 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        <button onClick={() => scrollTo('features')} className="hover:text-blue-600 transition-colors">Recursos</button>
+                        <button onClick={() => scrollTo('testimonials')} className="hover:text-blue-600 transition-colors">Depoimentos</button>
+                        <button onClick={() => scrollTo('pricing')} className="hover:text-blue-600 transition-colors">Planos</button>
                     </div>
-                    <button 
-                        onClick={() => scrollToSection('pricing')}
-                        className="bg-slate-900 text-white px-6 py-2.5 rounded-full font-bold hover:bg-slate-800 transition-all transform hover:scale-105 shadow-lg shadow-slate-900/10"
-                    >
-                        Criar Conta
-                    </button>
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => onEnterApp()} className="hidden sm:block text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-blue-600 transition-colors">Entrar</button>
+                        <button onClick={() => scrollTo('pricing')} className="bg-slate-900 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl hover:shadow-blue-500/20 active:scale-95">Experimentar</button>
+                    </div>
                 </div>
             </nav>
 
             {/* Hero Section */}
-            <section className="relative pt-40 pb-20 z-10 overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-full z-0 overflow-hidden pointer-events-none">
-                     <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-blue-100 rounded-full blur-[100px] opacity-60"></div>
-                     <div className="absolute bottom-[-10%] left-[-10%] w-[600px] h-[600px] bg-indigo-100 rounded-full blur-[100px] opacity-60"></div>
+            <section className="relative pt-48 pb-32 overflow-hidden bg-white">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-blue-50 rounded-full blur-[120px] opacity-50"></div>
                 </div>
-
-                <div className="max-w-7xl mx-auto px-6 text-center relative z-10">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-blue-100 text-blue-600 text-sm font-bold mb-8 shadow-sm animate-fade-in-up">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                        </span>
-                        Nova Integração com WhatsApp API
+                <div className="max-w-7xl mx-auto px-6 text-center">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-full text-blue-600 text-[10px] font-black uppercase tracking-widest mb-10 shadow-sm animate-bounce-subtle">
+                        <BoltIcon className="w-4 h-4" /> Nexus v3.0 • A Revolução na Gestão
                     </div>
-                    
-                    <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 leading-tight text-slate-900">
-                        Gestão Empresarial <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Simples e Inteligente</span>
+                    <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-8 leading-[0.9] text-slate-900 uppercase">
+                        Sua Agência <br /> em <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Piloto Automático.</span>
                     </h1>
-                    
-                    <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-10 leading-relaxed font-medium">
-                        Centralize CRM, Projetos, Financeiro e Automação em uma única plataforma. 
-                        Otimize sua agência ou empresa de serviços hoje mesmo.
+                    <p className="text-xl text-slate-500 max-w-2xl mx-auto mb-12 font-medium leading-relaxed">
+                        Abandone o caos das planilhas. Gerencie leads, projetos e WhatsApp em uma interface única e elegante.
                     </p>
-                    
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                        <button 
-                            onClick={() => scrollToSection('pricing')}
-                            className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-lg shadow-xl shadow-blue-600/20 transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2"
-                        >
-                            Escolher meu Plano <ChevronRightIcon className="w-5 h-5" />
+                        <button onClick={() => scrollTo('pricing')} className="group bg-blue-600 text-white px-10 py-5 rounded-[24px] font-black text-xl shadow-2xl shadow-blue-500/40 hover:bg-blue-700 transition-all flex items-center gap-3 hover:scale-105 active:scale-95">
+                            Começar agora <ChevronRightIcon className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
                         </button>
-                        <button 
-                            onClick={() => scrollToSection('demo-preview')}
-                            className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-xl font-bold text-lg transition-all shadow-sm"
-                        >
-                            Ver Demonstração
-                        </button>
-                    </div>
-
-                    {/* Dashboard Preview Mockup (Visual do Sistema) */}
-                    <div id="demo-preview" className="mt-20 relative mx-auto max-w-6xl scroll-mt-28">
-                        <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl blur-lg opacity-20"></div>
-                        <SystemDashboardMockup />
-                    </div>
-                </div>
-            </section>
-
-             {/* Benefits Section */}
-             <section id="benefits" className="py-24 relative z-10 bg-slate-50 border-t border-slate-200">
-                <div className="max-w-7xl mx-auto px-6">
-                    <div className="flex flex-col lg:flex-row items-center gap-16">
-                        <div className="lg:w-1/2">
-                            <h2 className="text-3xl md:text-4xl font-bold mb-6 text-slate-900">
-                                Por que sua empresa precisa do <span className="text-blue-600">Nexus</span>?
-                            </h2>
-                            <p className="text-lg text-slate-500 mb-8 leading-relaxed">
-                                Pare de usar 5 ferramentas diferentes. O Nexus Manager unifica todo o seu fluxo de trabalho, desde a captação do lead até a emissão da nota fiscal.
-                            </p>
-                            
-                            <div className="space-y-6">
-                                <div className="flex gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
-                                        <CurrencyDollarIcon className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-lg text-slate-900">Aumente seu Faturamento</h4>
-                                        <p className="text-slate-500">Não perca mais leads por falta de acompanhamento. Nosso CRM visual garante que nenhuma oportunidade seja esquecida.</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 shrink-0">
-                                        <FunnelIcon className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-lg text-slate-900">Organização Total</h4>
-                                        <p className="text-slate-500">Projetos, prazos e tarefas em um só lugar. Saiba exatamente quem está fazendo o quê e quando será entregue.</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-4">
-                                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-                                        <CloudIcon className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <h4 className="font-bold text-lg text-slate-900">Acesse de Onde Estiver</h4>
-                                        <p className="text-slate-500">Sistema 100% em nuvem. Gerencie sua empresa pelo computador, tablet ou celular com segurança.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="lg:w-1/2 relative">
-                            {/* Visual Abstracto dos Cards/Kanban */}
-                            <div className="relative z-10">
-                                <KanbanMockup />
-                            </div>
-                            <div className="absolute top-10 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -z-0"></div>
-                            <div className="absolute bottom-10 left-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -z-0"></div>
-                        </div>
                     </div>
                 </div>
             </section>
 
             {/* Features Section */}
-            <section id="features" className="py-24 relative z-10 bg-white">
+            <section id="features" className="py-32 bg-white">
                 <div className="max-w-7xl mx-auto px-6">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900">Funcionalidades Poderosas</h2>
-                        <p className="text-slate-500 max-w-2xl mx-auto text-lg">
-                            Ferramentas desenvolvidas pensando na realidade de agências e prestadores de serviços.
-                        </p>
+                    <div className="text-center mb-24">
+                        <span className="text-blue-600 font-black text-xs uppercase tracking-[0.3em] mb-4 block">Eficiência Máxima</span>
+                        <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 uppercase">TUDO O QUE VOCÊ PRECISA.</h2>
                     </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        <FeatureItem title="CRM Kanban" desc="Visualize seu funil de vendas e mova leads com um clique." icon={<FunnelIcon className="w-7 h-7" />} color="bg-blue-50 text-blue-600" />
+                        <FeatureItem title="WhatsApp I.A" desc="Automação nativa para disparos e nutrição de contatos." icon={<ChatBubbleLeftRightIcon className="w-7 h-7" />} color="bg-green-50 text-green-600" />
+                        <FeatureItem title="Gestão Sites" desc="Controle prazos, parceiros e entregas de forma visual." icon={<FolderIcon className="w-7 h-7" />} color="bg-purple-50 text-purple-600" />
+                        <FeatureItem title="Deep Search" desc="Capte leads qualificados diretamente do Google Maps." icon={<MapPinIcon className="w-7 h-7" />} color="bg-rose-50 text-rose-600" />
+                    </div>
+                </div>
+            </section>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <FeatureCard 
-                            title="CRM & Vendas" 
-                            desc="Pipeline visual (Kanban) para gerenciar leads. Histórico completo de conversas e integração direta com WhatsApp."
-                            icon={<UsersIcon className="w-6 h-6" />}
+            {/* Testimonials Restoration */}
+            <section id="testimonials" className="py-32 bg-slate-900 text-white overflow-hidden relative">
+                <div className="absolute -top-20 -right-20 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl"></div>
+                <div className="max-w-7xl mx-auto px-6 relative z-10">
+                    <div className="flex flex-col md:flex-row justify-between items-end gap-10 mb-20">
+                        <div className="max-w-2xl text-center md:text-left">
+                            <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-6 leading-tight text-white uppercase">CONFIADO POR <br /> QUEM CRESCE.</h2>
+                            <p className="text-slate-400 text-lg">Donos de agências e gestores que saíram do caos para a escala com o Nexus.</p>
+                        </div>
+                        <div className="flex gap-4 w-full md:w-auto justify-center">
+                            <div className="text-center bg-white/5 border border-white/10 p-6 rounded-[32px] min-w-[140px]">
+                                <p className="text-3xl font-black text-blue-500">+500</p>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase mt-1 tracking-widest">Clientes</p>
+                            </div>
+                            <div className="text-center bg-white/5 border border-white/10 p-6 rounded-[32px] min-w-[140px]">
+                                <p className="text-3xl font-black text-blue-500">99%</p>
+                                <p className="text-[10px] font-bold text-slate-500 uppercase mt-1 tracking-widest">Satisfação</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <TestimonialCard 
+                            name="Ricardo Silva" role="CEO Agência Alpha"
+                            text="O Nexus triplicou nossa velocidade de entrega. A gestão de projetos é impecável e o CRM é extremamente intuitivo."
+                            avatar="https://i.pravatar.cc/150?u=ricardo"
                         />
-                        <FeatureCard 
-                            title="Gestão de Projetos" 
-                            desc="Controle prazos, tarefas e parceiros. Saiba exatamente o status de cada entrega com relatórios de progresso."
-                            icon={<FolderIcon className="w-6 h-6" />}
+                        <TestimonialCard 
+                            name="Juliana Costa" role="Fundadora WebDesign Pro"
+                            text="A ferramenta de captação de leads VIP é mágica. Encontramos clientes qualificados em minutos, coisa que levava dias."
+                            avatar="https://i.pravatar.cc/150?u=juliana"
                         />
-                        <FeatureCard 
-                            title="Financeiro & SaaS" 
-                            desc="Gestão de recorrência (assinaturas), fluxo de caixa previsto vs. realizado e emissão de cobranças."
-                            icon={<ChartBarIcon className="w-6 h-6" />}
-                        />
-                        <FeatureCard 
-                            title="Automação WhatsApp" 
-                            desc="Dispare mensagens em massa para leads qualificados, gere QR Code e conecte sua instância em segundos."
-                            icon={<PhoneIcon className="w-6 h-6" />}
-                        />
-                        <FeatureCard 
-                            title="Captação de Leads" 
-                            desc="Utilize tecnologia avançada para varrer a web e encontrar empresas locais com base em nicho e localização."
-                            icon={<CloudIcon className="w-6 h-6" />}
-                        />
-                        <FeatureCard 
-                            title="Área do Cliente" 
-                            desc="Permita que seus clientes visualizem o andamento de projetos e faturas em um portal dedicado."
-                            icon={<CheckBadgeIcon className="w-6 h-6" />}
+                        <TestimonialCard 
+                            name="Lucas Oliveira" role="Gestor de TI"
+                            text="Finalmente um sistema que une o financeiro e o operacional de forma coesa. O suporte é rápido e eficiente."
+                            avatar="https://i.pravatar.cc/150?u=lucas"
                         />
                     </div>
                 </div>
             </section>
 
             {/* Pricing Section */}
-            <section id="pricing" className="py-24 relative z-10 bg-slate-50 border-t border-slate-200">
+            <section id="pricing" className="py-32 bg-[#fcfdfe]">
                 <div className="max-w-7xl mx-auto px-6">
-                    <div className="text-center mb-10">
-                        <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900">Planos que cabem no seu bolso</h2>
-                        <p className="text-slate-500 max-w-2xl mx-auto text-lg mb-8">
-                            Escolha o plano ideal para a sua fase. Cancele a qualquer momento.
-                        </p>
-
-                        {/* Toggle Switch Mensal/Anual */}
-                        <div className="flex items-center justify-center gap-4">
-                            <span className={`text-sm font-bold ${billingCycle === 'monthly' ? 'text-slate-900' : 'text-slate-400'}`}>Mensal</span>
-                            <button 
-                                onClick={() => setBillingCycle(prev => prev === 'monthly' ? 'yearly' : 'monthly')}
-                                className="w-14 h-7 bg-blue-600 rounded-full p-1 relative transition-colors duration-300 focus:outline-none"
-                            >
-                                <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${billingCycle === 'yearly' ? 'translate-x-7' : 'translate-x-0'}`}></div>
-                            </button>
-                            <span className={`text-sm font-bold ${billingCycle === 'yearly' ? 'text-slate-900' : 'text-slate-400'}`}>
-                                Anual <span className="text-green-600 text-xs ml-1 bg-green-100 px-2 py-0.5 rounded-full">17% OFF</span>
-                            </span>
+                    <div className="text-center mb-20">
+                        <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 mb-8 uppercase">Planos de Crescimento</h2>
+                        <div className="inline-flex items-center gap-4 bg-slate-100 p-2 rounded-[24px] border border-slate-200">
+                            <button onClick={() => setBillingCycle('monthly')} className={`px-8 py-3 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all ${billingCycle === 'monthly' ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-500'}`}>Mensal</button>
+                            <button onClick={() => setBillingCycle('yearly')} className={`px-8 py-3 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white shadow-xl' : 'text-slate-500'}`}>Anual <span className="bg-white/20 px-2 py-0.5 rounded text-[9px]">-17%</span></button>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
-                        <PricingCard 
-                            title="PRO" 
-                            price={billingCycle === 'monthly' ? "R$ 200,00" : "R$ 2.000,00"}
-                            period={billingCycle === 'monthly' ? "/mês" : "/ano"}
-                            desc="Ideal para profissionais que buscam crescimento."
-                            features={[
-                                "CRM de Vendas Ilimitado",
-                                "Gestão de Projetos Ilimitada",
-                                "Até 3 Usuários",
-                                "Agenda Financeira",
-                                "Relatórios Avançados"
-                            ]}
-                            onClick={() => onEnterApp('PRO', billingCycle)}
-                        />
-                        <PricingCard 
-                            title="VIP" 
-                            price={billingCycle === 'monthly' ? "R$ 500,00" : "R$ 5.000,00"}
-                            period={billingCycle === 'monthly' ? "/mês" : "/ano"}
-                            desc="Controle total e automação para sua empresa."
-                            isPopular={true}
-                            features={[
-                                "Tudo do plano PRO",
-                                "Usuários Ilimitados",
-                                "Automação WhatsApp API",
-                                "Captação de Leads Avançada",
-                                "Assistente Financeiro Inteligente",
-                                "Prioridade no Suporte"
-                            ]}
-                            onClick={() => onEnterApp('VIP', billingCycle)}
-                        />
-                    </div>
-                </div>
-            </section>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch max-w-5xl mx-auto">
+                        {PLANS.map((plan) => (
+                            <div key={plan.name} className={`group relative p-8 sm:p-10 rounded-[40px] border flex flex-col transition-all duration-500 hover:-translate-y-2 ${plan.highlight ? 'bg-white border-blue-600 shadow-2xl z-10' : 'bg-white border-slate-100 hover:border-slate-200'}`}>
+                                {plan.tag && <div className="absolute top-0 right-10 -translate-y-1/2 bg-blue-600 text-white text-[9px] font-black px-4 py-1.5 rounded-full shadow-xl uppercase tracking-widest">{plan.tag}</div>}
+                                
+                                <h3 className="text-xl font-black mb-2 tracking-tighter text-slate-900 uppercase">{plan.name}</h3>
+                                <p className="text-slate-500 text-[10px] mb-8 font-black uppercase opacity-60 tracking-widest min-h-[30px]">{plan.description}</p>
+                                
+                                <div className="flex items-baseline gap-1 mb-8 whitespace-nowrap">
+                                    <span className="text-3xl sm:text-4xl font-black tracking-tighter text-slate-900">
+                                        R$ {(billingCycle === 'monthly' ? plan.price.monthly : plan.price.yearly).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </span>
+                                    <span className="text-slate-400 font-bold text-[9px] uppercase tracking-widest shrink-0 opacity-50">{billingCycle === 'monthly' ? '/mês' : '/ano'}</span>
+                                </div>
 
-            {/* CTA Section */}
-            <section className="py-24 relative z-10 overflow-hidden bg-white border-t border-slate-200">
-                <div className="max-w-4xl mx-auto px-6 text-center relative">
-                    <h2 className="text-4xl font-bold mb-6 text-slate-900">Pronto para escalar sua operação?</h2>
-                    <p className="text-xl text-slate-500 mb-10">
-                        Junte-se a empresas que organizaram seus processos e aumentaram seu faturamento com o Nexus Manager.
-                    </p>
-                    <button 
-                        onClick={() => scrollToSection('pricing')}
-                        className="px-10 py-4 bg-blue-600 text-white rounded-full font-bold text-lg hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/30 transform hover:scale-105"
-                    >
-                        Criar Conta
-                    </button>
-                    <p className="mt-6 text-sm text-slate-400">Não requer cartão de crédito • Cancelamento a qualquer momento</p>
+                                <button onClick={() => onEnterApp(plan.name, billingCycle)} className={`w-full py-4 rounded-[20px] font-black text-[10px] uppercase tracking-widest transition-all mb-10 shadow-lg ${plan.highlight ? 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95' : 'bg-slate-100 text-slate-900 hover:bg-slate-200 active:scale-95'}`}>
+                                    Escolher {plan.name}
+                                </button>
+                                
+                                <div className="space-y-4 flex-1">
+                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 pb-2">Vantagens:</p>
+                                    <ul className="space-y-4">
+                                        {plan.features.map((f, i) => (
+                                            <li key={i} className="flex items-start gap-3 text-xs font-bold text-slate-600 leading-tight">
+                                                <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${plan.highlight ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>
+                                                    <CheckBadgeIcon className="w-3 h-3" />
+                                                </div>
+                                                {f}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </section>
 
             {/* Footer */}
-            <footer className="border-t border-slate-200 bg-slate-900 pt-16 pb-8 text-slate-400 text-sm">
-                <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-                    <div className="col-span-1 md:col-span-1">
-                        <div className="flex items-center gap-2 mb-4 text-white">
-                            {/* Logo Footer Atualizada */}
-                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-white">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
-                                </svg>
-                            </div>
-                            <span className="text-xl font-bold">Nexus Manager</span>
+            <footer className="bg-white py-24 text-slate-500 border-t border-slate-100">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                        <div className="flex items-center gap-3">
+                            <RocketLaunchIcon className="w-8 h-8 text-blue-600" />
+                            <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">NEXUS<span className="text-blue-600">MANAGER</span></span>
                         </div>
-                        <p>A plataforma definitiva para gestão de agências e serviços digitais.</p>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">© 2025 NEXUS MANAGER. ALL RIGHTS RESERVED.</p>
+                        <div className="flex gap-6">
+                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-blue-50 transition-colors cursor-pointer"><UsersIcon className="w-4 h-4" /></div>
+                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-blue-50 transition-colors cursor-pointer"><GlobeAltIcon className="w-4 h-4" /></div>
+                        </div>
                     </div>
-                    <div>
-                        <h4 className="text-white font-bold mb-4">Produto</h4>
-                        <ul className="space-y-2">
-                            <li><button onClick={() => scrollToSection('features')} className="hover:text-blue-400">Funcionalidades</button></li>
-                            <li><button onClick={() => scrollToSection('pricing')} className="hover:text-blue-400">Preços</button></li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 className="text-white font-bold mb-4">Recursos</h4>
-                        <ul className="space-y-2">
-                            <li><a href="#" className="hover:text-blue-400">Blog</a></li>
-                            <li><a href="#" className="hover:text-blue-400">Suporte</a></li>
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 className="text-white font-bold mb-4">Legal</h4>
-                        <ul className="space-y-2">
-                            <li><a href="#" className="hover:text-blue-400">Privacidade</a></li>
-                            <li><a href="#" className="hover:text-blue-400">Termos de Uso</a></li>
-                        </ul>
-                    </div>
-                </div>
-                <div className="max-w-7xl mx-auto px-6 border-t border-slate-800 pt-8 text-center">
-                    <p>&copy; 2025 Nexus Manager. Todos os direitos reservados.</p>
                 </div>
             </footer>
         </div>

@@ -1,9 +1,11 @@
+
 import React from 'react';
 import type { View, User } from '../types';
 import { 
-  HomeIcon, UsersIcon, BriefcaseIcon, FolderIcon, GlobeAltIcon, 
+  HomeIcon, UsersIcon, BriefcaseIcon, FolderIcon, 
   CloudIcon, CurrencyDollarIcon, CreditCardIcon, BuildingOfficeIcon, 
-  UserPlusIcon, Cog6ToothIcon, LogoutIcon, FunnelIcon, MapPinIcon 
+  UserPlusIcon, Cog6ToothIcon, LogoutIcon, FunnelIcon, MapPinIcon, ChartBarIcon,
+  RocketLaunchIcon
 } from './Icons';
 
 interface SidebarProps {
@@ -20,12 +22,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
     { name: 'Dashboard', icon: <HomeIcon /> },
     { name: 'CRM', icon: <FunnelIcon /> },
     { name: 'Captação', icon: <MapPinIcon /> },
+    { name: 'Relatórios', icon: <ChartBarIcon /> },
     { name: 'Clientes', icon: <UsersIcon /> },
     { name: 'Parceiros', icon: <BriefcaseIcon /> },
     { name: 'Projetos', icon: <FolderIcon /> },
     { name: 'SaaS', icon: <CloudIcon /> },
     { name: 'Financeiro', icon: <CurrencyDollarIcon /> },
-    { name: 'Assinatura', icon: <CreditCardIcon />, superAdminHidden: true },
     { name: 'Empresas', icon: <BuildingOfficeIcon />, adminOnly: true },
     { name: 'Gerenciar Assinaturas', icon: <CreditCardIcon />, adminOnly: true },
     { name: 'Usuários', icon: <UserPlusIcon /> },
@@ -39,10 +41,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
 
   const handleLinkClick = (view: View) => {
     setActiveView(view);
-    onClose(); // Close sidebar on mobile after navigation
+    onClose();
   };
 
-  // Função para pegar as iniciais do Nome + Sobrenome
   const getInitials = (name: string) => {
       const parts = name.trim().split(/\s+/);
       if (parts.length === 0) return '';
@@ -52,7 +53,6 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
 
   return (
     <>
-      {/* Backdrop for mobile */}
       <div 
         className={`lg:hidden fixed inset-0 bg-black/60 z-30 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
@@ -63,8 +63,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentUser, activeView, setActiveVie
         transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="p-4 border-b border-white/10 text-center">
-          <h1 className="text-xl font-bold text-white leading-tight">Nexus Manager</h1>
+        <div className="p-6 border-b border-white/10 flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <RocketLaunchIcon className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xl font-black tracking-tighter text-white uppercase">NEXUS<span className="text-blue-600">MANAGER</span></span>
         </div>
         <ul className="flex-1 p-2 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => (

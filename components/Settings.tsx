@@ -1,18 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { PhoneIcon, CheckBadgeIcon, CloudIcon } from './Icons';
-
-// ==================================================================================
-// 🔧 CONFIGURAÇÃO DO WHATSAPP (Preencha seus dados aqui diretamente no código)
-// ==================================================================================
-const WA_CONFIG = {
-    apiUrl: "https://api.seudominio.com", // Coloque a URL da sua API aqui
-    apiToken: "SEU_TOKEN_GLOBAL_AQUI",    // Coloque seu Token/API Key aqui
-    instanceName: "MinhaInstancia"        // Nome da instância
-};
-// ==================================================================================
-
+import { PhoneIcon, CheckBadgeIcon, CloudIcon, RocketLaunchIcon, CreditCardIcon, UserPlusIcon } from './Icons';
+import { CURRENCY_SYMBOLS } from '../constants';
+import UpgradeModal from './UpgradeModal';
+import type { Company, BillingCycle } from '../types';
 
 const ToggleSwitch: React.FC<{ enabled: boolean, setEnabled: (enabled: boolean) => void }> = ({ enabled, setEnabled }) => (
     <button
@@ -31,10 +22,18 @@ const ToggleSwitch: React.FC<{ enabled: boolean, setEnabled: (enabled: boolean) 
 );
 
 const Settings: React.FC = () => {
-    const { currentUser, updateUser, whatsappConfig, setWhatsappConfig } = useData();
+    const { currentUser, updateUser, whatsappConfig, setWhatsappConfig, companies, openModal, closeModal, updateCompany } = useData();
     const [emailNotifications, setEmailNotifications] = useState(true);
     
-    // State for user profile fields
+    // Configurações Globais Hardcoded conforme solicitado anteriormente
+    const WA_CONFIG = {
+        apiUrl: "https://api.seudominio.com", 
+        apiToken: "SEU_TOKEN_GLOBAL_AQUI",    
+        instanceName: "MinhaInstancia"        
+    };
+
+    const myCompany = companies.find(c => c.id === currentUser?.companyId);
+
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -45,11 +44,9 @@ const Settings: React.FC = () => {
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting' | 'qrcode'>('disconnected');
     const [waLoading, setWaLoading] = useState(false);
-
     const [isSaving, setIsSaving] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
     
-    // Atualiza o form data quando o currentUser muda e carrega config do WhatsApp
     useEffect(() => {
         if (currentUser) {
             setFormData({
@@ -74,7 +71,6 @@ const Settings: React.FC = () => {
     const handleSaveUserProfile = async () => {
         setIsSaving(true);
         setSuccessMsg('');
-        
         try {
             await updateUser({
                 ...currentUser,
@@ -85,16 +81,13 @@ const Settings: React.FC = () => {
             });
             setSuccessMsg('Dados atualizados com sucesso!');
         } catch (error) {
-            console.error("Failed to update user", error);
-            setSuccessMsg('Erro ao atualizar. Tente novamente.');
+            setSuccessMsg('Erro ao atualizar.');
         } finally {
             setIsSaving(false);
         }
     };
 
-    // --- WhatsApp Connection Logic ---
-
-    // Atualiza o contexto global com as credenciais Hardcoded quando tenta conectar
+    // --- WhatsApp Logic ---
     const updateGlobalConfig = (isConnected: boolean) => {
         setWhatsappConfig({
             apiUrl: WA_CONFIG.apiUrl,
@@ -106,317 +99,225 @@ const Settings: React.FC = () => {
 
     const connectWhatsApp = async () => {
         setWaLoading(true);
-        setQrCode(null);
-        setSuccessMsg('');
-
         try {
             updateGlobalConfig(false);
-
-            // 1. Tenta conectar/buscar QR Code (Exemplo baseado na Evolution API v1/v2)
             const response = await fetch(`${WA_CONFIG.apiUrl}/instance/connect/${WA_CONFIG.instanceName}`, {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': WA_CONFIG.apiToken,
-                    'Authorization': `Bearer ${WA_CONFIG.apiToken}`
-                }
+                headers: { 'apikey': WA_CONFIG.apiToken, 'Authorization': `Bearer ${WA_CONFIG.apiToken}` }
             });
-
-            if (!response.ok) {
-                throw new Error('Falha na API. Verifique as constantes no código.');
-            }
-
             const data = await response.json();
-
-            // Lógica adaptativa para diferentes respostas de API
             if (data.base64 || (data.qrcode && data.qrcode.base64)) {
-                // QR Code recebido
-                const base64 = data.base64 || data.qrcode.base64;
-                setQrCode(base64);
+                setQrCode(data.base64 || data.qrcode.base64);
                 setConnectionStatus('qrcode');
-                setSuccessMsg('Escaneie o QR Code.');
             } else if (data.instance && data.instance.status === 'open') {
-                // Já conectado
                 setConnectionStatus('connected');
                 updateGlobalConfig(true);
-                setSuccessMsg('Instância já está conectada!');
-            } else {
-                 // Fallback genérico
-                 setSuccessMsg('Comando enviado. Verifique o status.');
             }
-
-        } catch (error: any) {
-            console.error(error);
-            setSuccessMsg(`Erro: ${error.message}`);
+        } catch (error) {
             setConnectionStatus('disconnected');
-        } finally {
-            setWaLoading(false);
-        }
-    };
-
-    const checkConnectionStatus = async () => {
-        if (!WA_CONFIG.apiUrl) return;
-        setWaLoading(true);
-        try {
-             const response = await fetch(`${WA_CONFIG.apiUrl}/instance/connectionState/${WA_CONFIG.instanceName}`, {
-                method: 'GET',
-                headers: {
-                    'apikey': WA_CONFIG.apiToken,
-                    'Authorization': `Bearer ${WA_CONFIG.apiToken}`
-                }
-            });
-            const data = await response.json();
-            
-            if (data.instance && data.instance.state === 'open') {
-                setConnectionStatus('connected');
-                setQrCode(null);
-                updateGlobalConfig(true);
-                setSuccessMsg('Conectado com sucesso!');
-            } else {
-                setConnectionStatus('disconnected');
-                updateGlobalConfig(false);
-                setSuccessMsg('Instância desconectada.');
-            }
-        } catch (e) {
-            setSuccessMsg('Erro ao verificar status.');
         } finally {
             setWaLoading(false);
         }
     };
 
     const disconnectWhatsApp = async () => {
-        if (!confirm('Tem certeza que deseja desconectar?')) return;
+        if (!confirm('Desconectar WhatsApp?')) return;
         setWaLoading(true);
         try {
-             await fetch(`${WA_CONFIG.apiUrl}/instance/logout/${WA_CONFIG.instanceName}`, {
+            await fetch(`${WA_CONFIG.apiUrl}/instance/logout/${WA_CONFIG.instanceName}`, {
                 method: 'DELETE',
-                headers: {
-                    'apikey': WA_CONFIG.apiToken,
-                    'Authorization': `Bearer ${WA_CONFIG.apiToken}`
-                }
+                headers: { 'apikey': WA_CONFIG.apiToken, 'Authorization': `Bearer ${WA_CONFIG.apiToken}` }
             });
             setConnectionStatus('disconnected');
             setQrCode(null);
             updateGlobalConfig(false);
-            setSuccessMsg('Desconectado.');
         } catch (e) {
-            setSuccessMsg('Erro ao desconectar (pode já estar offline).');
             setConnectionStatus('disconnected');
         } finally {
             setWaLoading(false);
         }
     };
 
-    const getInitials = (name: string) => {
-        return name
-          .split(' ')
-          .map((n) => n[0])
-          .slice(0, 2)
-          .join('')
-          .toUpperCase();
+    // --- Subscription Logic ---
+    const handleUpgradePlan = async (newPlanName: string, newPrice: number, newCycle: BillingCycle) => {
+        if (!myCompany) return;
+        closeModal();
+        const updatedCompany: Company = {
+            ...myCompany,
+            plan: newPlanName,
+            subscriptionValue: newPrice,
+            billingCycle: newCycle
+        };
+        await updateCompany(updatedCompany);
+        alert(`Plano atualizado para ${newPlanName}!`);
     };
 
-  return (
+    const openUpgradeModal = () => {
+        openModal(
+            'Atualize seu Plano',
+            <UpgradeModal 
+                currentPlan={myCompany?.plan || 'Starter'} 
+                onConfirm={handleUpgradePlan}
+                onCancel={closeModal}
+            />,
+            'max-w-5xl'
+        );
+    };
+
+    const getInitials = (name: string) => {
+        return name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
+    };
+
+    const isOverdue = myCompany && new Date(myCompany.subscriptionDueDate) < new Date() && myCompany.subscriptionStatus === 'Ativa';
+
+    return (
     <div>
       <h2 className="text-3xl font-bold text-text-primary mb-6">Configurações</h2>
       <div className="max-w-4xl space-y-8">
         
-        {/* === CARD WHATSAPP === */}
-        <div className="bg-surface p-8 rounded-lg shadow-lg border border-white/10 relative overflow-hidden">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
-                    <PhoneIcon className="w-6 h-6 text-green-500" />
-                    Integração WhatsApp
-                </h3>
-                <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 ${
-                    connectionStatus === 'connected' ? 'bg-green-500/20 text-green-400' :
-                    connectionStatus === 'qrcode' ? 'bg-yellow-500/20 text-yellow-400' :
-                    'bg-red-500/20 text-red-400'
-                }`}>
-                    <div className={`w-2 h-2 rounded-full ${
-                        connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' :
-                        connectionStatus === 'qrcode' ? 'bg-yellow-500' :
-                        'bg-red-500'
-                    }`}></div>
-                    {connectionStatus === 'connected' ? 'CONECTADO' : 
-                     connectionStatus === 'qrcode' ? 'AGUARDANDO LEITURA' : 'DESCONECTADO'}
+        {/* === SEÇÃO MEU PLANO === */}
+        {myCompany && (
+            <div className="bg-[#0f172a] p-8 rounded-lg shadow-lg border border-white/10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+                    <RocketLaunchIcon className="w-32 h-32 text-white" />
                 </div>
-            </div>
+                
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <RocketLaunchIcon className="w-6 h-6 text-blue-500" />
+                            Plano Atual: <span className="text-blue-400">{myCompany.plan || 'Starter'}</span>
+                        </h3>
+                        <p className="text-sm text-slate-400">Ciclo de faturamento: {myCompany.billingCycle === 'yearly' ? 'Anual' : 'Mensal'}</p>
+                    </div>
+                    <button 
+                        onClick={openUpgradeModal}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2"
+                    >
+                        Fazer Upgrade
+                    </button>
+                </div>
 
-            <p className="text-sm text-text-secondary mb-6 bg-background/50 p-3 rounded border border-white/10">
-                Gerencie a conexão da sua instância do WhatsApp. As credenciais de API estão configuradas internamente no sistema.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                <div className="space-y-4 flex flex-col items-center md:items-start text-center md:text-left">
-                    <p className="text-text-primary font-medium">Controle de Conexão</p>
-                    <p className="text-sm text-text-secondary">
-                        Clique abaixo para iniciar a sessão e gerar o QR Code se estiver desconectado.
-                    </p>
-                    
-                    <div className="flex gap-2 pt-2 flex-wrap justify-center md:justify-start">
-                        {connectionStatus === 'connected' ? (
-                            <button 
-                                onClick={disconnectWhatsApp}
-                                disabled={waLoading}
-                                className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm transition-colors disabled:opacity-50 font-medium"
-                            >
-                                {waLoading ? '...' : 'Desconectar Sessão'}
-                            </button>
-                        ) : (
-                            <button 
-                                onClick={connectWhatsApp}
-                                disabled={waLoading}
-                                className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm transition-colors disabled:opacity-50 shadow-lg shadow-green-900/20 font-medium flex items-center gap-2"
-                            >
-                                {waLoading ? 'Carregando...' : 'Gerar QR Code'}
-                            </button>
-                        )}
-                         <button 
-                            onClick={checkConnectionStatus}
-                            className="p-2 text-text-secondary hover:text-primary border border-white/10 rounded hover:bg-white/5"
-                            title="Verificar Status da API"
-                        >
-                            <CloudIcon className="w-5 h-5" />
-                        </button>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4 border-t border-white/5">
+                    <div>
+                        <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Status</p>
+                        <span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-bold ${isOverdue ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                            {isOverdue ? 'Vencido' : 'Ativo'}
+                        </span>
+                    </div>
+                    <div>
+                        <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Valor</p>
+                        <p className="text-lg font-bold text-white">
+                            {CURRENCY_SYMBOLS[myCompany.currency]} {myCompany.subscriptionValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                    </div>
+                    <div>
+                        <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Próximo Vencimento</p>
+                        <p className="text-lg font-bold text-white">
+                            {new Date(myCompany.subscriptionDueDate).toLocaleDateString('pt-BR')}
+                        </p>
                     </div>
                 </div>
-
-                {/* Área do QR Code / Status Visual */}
-                <div className="flex items-center justify-center bg-black/20 rounded-lg border border-white/5 min-h-[250px] relative overflow-hidden w-full">
-                    {waLoading && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10 backdrop-blur-sm">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                        </div>
-                    )}
-                    
-                    {connectionStatus === 'connected' ? (
-                        <div className="text-center p-6">
-                            <CheckBadgeIcon className="w-20 h-20 text-green-500 mx-auto mb-4" />
-                            <p className="text-green-400 font-bold text-lg">WhatsApp Sincronizado</p>
-                            <p className="text-sm text-text-secondary mt-1">O sistema está pronto para enviar mensagens automáticas.</p>
-                        </div>
-                    ) : qrCode ? (
-                        <div className="text-center p-4">
-                            <div className="bg-white p-2 rounded-lg inline-block mb-3 shadow-xl">
-                                <img src={qrCode} alt="WhatsApp QR Code" className="w-48 h-48 object-contain" />
-                            </div>
-                            <p className="text-sm text-text-secondary animate-pulse font-medium">Abra o WhatsApp > Aparelhos Conectados > Conectar</p>
-                        </div>
-                    ) : (
-                        <div className="text-center text-text-secondary opacity-50 p-6">
-                            <PhoneIcon className="w-16 h-16 mx-auto mb-4" />
-                            <p className="font-medium">Aguardando solicitação de conexão...</p>
-                        </div>
-                    )}
-                </div>
             </div>
-        </div>
+        )}
 
         {/* === CARD PERFIL === */}
         <div className="bg-surface p-8 rounded-lg shadow-lg border border-white/10">
           <div className="flex items-center mb-8">
-            <div className="relative group">
-                <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center border-2 border-primary/50 text-white font-bold text-3xl shadow-xl">
-                    {getInitials(formData.name || currentUser.name)}
-                </div>
+            <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center border-2 border-blue-400/30 text-white font-bold text-3xl shadow-xl shrink-0">
+                {getInitials(formData.name || currentUser.name)}
             </div>
             <div className="ml-6">
                 <h3 className="text-2xl font-bold text-text-primary">{formData.name || currentUser.name}</h3>
                 <p className="text-text-secondary">{formData.email || currentUser.email}</p>
-                <div className="flex items-center gap-2 mt-2">
-                     <span className="px-2 py-0.5 rounded text-xs font-semibold bg-primary/20 text-primary uppercase">{currentUser.role}</span>
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-600/20 text-blue-400 uppercase tracking-wider border border-blue-400/30">
+                        {currentUser.role}
+                     </span>
+                     {myCompany?.plan && (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-600 uppercase tracking-wider border border-amber-600/30">
+                            PLANO {myCompany.plan}
+                        </span>
+                     )}
                 </div>
             </div>
           </div>
           
           <div className="space-y-6">
              <h4 className="text-lg font-semibold text-text-primary border-b border-white/10 pb-2">Dados Cadastrais</h4>
-             
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-text-secondary mb-1">Nome Completo</label>
-                  <input 
-                    type="text" 
-                    id="name" 
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className="block w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm text-text-primary" 
-                  />
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Nome Completo</label>
+                  <input type="text" name="name" value={formData.name} onChange={handleInputChange} className="block w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md text-text-primary focus:border-blue-500 outline-none transition-colors" />
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1">Email</label>
-                  <input 
-                    type="email" 
-                    id="email" 
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="block w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm text-text-primary" 
-                  />
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Email</label>
+                  <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="block w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md text-text-primary focus:border-blue-500 outline-none transition-colors" />
                 </div>
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-text-secondary mb-1">Telefone</label>
-                  <input 
-                    type="tel" 
-                    id="phone" 
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="(00) 00000-0000"
-                    className="block w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm text-text-primary" 
-                  />
+                  <label className="block text-sm font-medium text-text-secondary mb-1">Telefone</label>
+                  <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="block w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md text-text-primary focus:border-blue-500 outline-none transition-colors" />
                 </div>
                 <div>
-                  <label htmlFor="cpf" className="block text-sm font-medium text-text-secondary mb-1">CPF</label>
-                  <input 
-                    type="text" 
-                    id="cpf" 
-                    name="cpf"
-                    value={formData.cpf}
-                    onChange={handleInputChange}
-                    placeholder="000.000.000-00"
-                    className="block w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm text-text-primary" 
-                  />
+                  <label className="block text-sm font-medium text-text-secondary mb-1">CPF</label>
+                  <input type="text" name="cpf" value={formData.cpf} onChange={handleInputChange} className="block w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md text-text-primary focus:border-blue-500 outline-none transition-colors" />
                 </div>
              </div>
 
-            <hr className="border-white/10 my-8"/>
-            
-            {/* Notifications Section */}
-            <div>
-                <h4 className="text-lg font-semibold text-text-primary">Preferências</h4>
-                <div className="mt-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <label className="block font-medium text-text-primary">Notificações por Email</label>
-                            <p className="text-sm text-text-secondary">Receba emails sobre atividades importantes e prazos.</p>
-                        </div>
-                        <ToggleSwitch enabled={emailNotifications} setEnabled={setEmailNotifications} />
-                    </div>
+             <div className="flex items-center justify-between pt-4 border-t border-white/10 mt-6">
+                <button onClick={handleSaveUserProfile} disabled={isSaving} className="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition-all shadow-md active:scale-95 disabled:opacity-50">
+                    {isSaving ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+                {successMsg && <span className="text-sm text-green-500 font-bold animate-fade-in">{successMsg}</span>}
+             </div>
+          </div>
+        </div>
+
+        {/* === CARD WHATSAPP === */}
+        <div className="bg-surface p-8 rounded-lg shadow-lg border border-white/10">
+            <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
+                    <PhoneIcon className="w-6 h-6 text-green-500" />
+                    Integração WhatsApp
+                </h3>
+                <div className={`px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-2 ${connectionStatus === 'connected' ? 'bg-green-500/20 text-green-400 border border-green-400/30' : 'bg-red-500/20 text-red-400 border border-red-400/30'}`}>
+                    <div className={`w-1.5 h-1.5 rounded-full ${connectionStatus === 'connected' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
+                    {connectionStatus === 'connected' ? 'CONECTADO' : 'DESCONECTADO'}
                 </div>
             </div>
 
-            <hr className="border-white/10 my-8"/>
-            
-            <div className="flex items-center justify-between pt-4">
-              {successMsg && <span className={`text-sm font-medium animate-pulse ${successMsg.includes('Erro') || successMsg.includes('Falha') ? 'text-red-500' : 'text-green-500'}`}>{successMsg}</span>}
-              {!successMsg && <span></span>} {/* Spacer */}
-              <button 
-                type="button" 
-                onClick={handleSaveUserProfile}
-                disabled={isSaving}
-                className="bg-primary text-white px-6 py-2 rounded-lg shadow-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-wait"
-              >
-                {isSaving ? 'Salvando...' : 'Salvar Alterações'}
-              </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div className="space-y-4">
+                    <p className="text-sm text-text-secondary leading-relaxed">Conecte sua instância para automatizar o envio de mensagens pelo CRM e pela Captação Inteligente.</p>
+                    <div className="flex gap-2">
+                        {connectionStatus === 'connected' ? (
+                            <button onClick={disconnectWhatsApp} disabled={waLoading} className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-bold transition-all shadow-md">Desconectar</button>
+                        ) : (
+                            <button onClick={connectWhatsApp} disabled={waLoading} className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-bold transition-all shadow-md">Gerar QR Code</button>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-center bg-background/50 rounded-lg border border-white/10 min-h-[220px] p-4">
+                    {qrCode ? (
+                        <div className="text-center">
+                            <div className="bg-white p-3 rounded-xl shadow-inner inline-block mb-3 border border-slate-200">
+                                <img src={qrCode} alt="QR Code WhatsApp" className="w-36 h-36" />
+                            </div>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest animate-pulse">Escaneie no seu celular</p>
+                        </div>
+                    ) : (
+                        <div className="text-center text-slate-400 opacity-40">
+                            <PhoneIcon className="w-16 h-16 mx-auto mb-3" />
+                            <p className="text-xs font-medium uppercase tracking-widest">Aguardando Conexão</p>
+                        </div>
+                    )}
+                </div>
             </div>
-          </div>
         </div>
       </div>
     </div>
-  );
+    );
 };
 
 export default Settings;
