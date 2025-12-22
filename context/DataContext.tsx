@@ -1,9 +1,9 @@
+
 import React, { createContext, useContext, useState, useMemo, useEffect, useCallback } from 'react';
 import Modal from '../components/Modal';
-import type { Client, Partner, Project, SaaSProduct, User, Company, Payment, DataContextType, View, SubscriptionPayment, Lead, ChatMessage, WhatsAppConfig, Transaction } from '../types';
+import type { Client, Partner, Project, SaaSProduct, User, Company, Payment, DataContextType, View, Lead, Transaction, TransactionStatus } from '../types';
 import { api } from '../services/api';
 import { PLANS } from '../constants';
-import { RocketLaunchIcon, LockClosedIcon } from '../components/Icons';
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
@@ -15,21 +15,9 @@ export const useData = () => {
     return context;
 }
 
-const PasswordDisplay: React.FC<{ user: User }> = ({ user }) => (
-    <div className="text-center">
-        <p className="text-text-primary mb-2 font-bold">Usuário criado com sucesso!</p>
-        <div className="bg-background/50 border border-white/20 rounded-md p-4 my-4 text-left">
-            <p><strong className="text-text-secondary">Email:</strong> {user.email}</p>
-            <p><strong className="text-text-secondary">Senha temporária:</strong> <span className="font-mono bg-black/30 px-2 py-1 rounded text-primary">{user.password}</span></p>
-        </div>
-        <p className="text-xs text-text-secondary italic">Peça para o usuário alterar a senha no primeiro acesso.</p>
-    </div>
-);
-
 export const DataProvider: React.FC<{ children: React.ReactNode, currentUser: User | null, impersonatedCompany: Company | null, setActiveView: (v: View) => void }> = ({ currentUser: initialUser, impersonatedCompany, children, setActiveView }) => {
     const [currentUser, setCurrentUser] = useState<User | null>(initialUser);
     
-    // Estados brutos (contêm todos os dados vindos da API)
     const [rawUsers, setRawUsers] = useState<User[]>([]);
     const [rawCompanies, setRawCompanies] = useState<Company[]>([]);
     const [rawClients, setRawClients] = useState<Client[]>([]);
@@ -39,8 +27,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode, currentUser: Us
     const [rawLeads, setRawLeads] = useState<Lead[]>([]);
     const [rawTransactions, setRawTransactions] = useState<Transaction[]>([]);
     
-    const [whatsappConfig, setWhatsappConfigState] = useState<WhatsAppConfig>({ apiUrl: '', apiToken: '', instanceName: '', isConnected: false });
-
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalContent, setModalContent] = useState<React.ReactNode | null>(null);
     const [modalTitle, setModalTitle] = useState('');
@@ -59,16 +45,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode, currentUser: Us
     }, [initialUser]);
 
     const load = useCallback(async () => {
-        const db = await api.fetchData();
-        if (db) {
-            setRawUsers(db.users || []);
-            setRawCompanies(db.companies || []);
-            setRawClients(db.clients || []);
-            setRawPartners(db.partners || []);
-            setRawProjects([...(db.projects || []), ...(db.sites || [])]);
-            setRawSaaSProducts(db.saasProducts || []);
-            setRawLeads(db.leads || []);
-            setRawTransactions(db.transactions || []);
+        try {
+            const db = await api.fetchData();
+            if (db) {
+                setRawUsers(db.users || []);
+                setRawCompanies(db.companies || []);
+                setRawClients(db.clients || []);
+                setRawPartners(db.partners || []);
+                setRawProjects([...(db.projects || []), ...(db.sites || [])]);
+                setRawSaaSProducts(db.saasProducts || []);
+                setRawLeads(db.leads || []);
+                setRawTransactions(db.transactions || []);
+            }
+        } catch (err) {
+            console.error("Erro ao carregar dados:", err);
         }
     }, []);
 
@@ -76,136 +66,255 @@ export const DataProvider: React.FC<{ children: React.ReactNode, currentUser: Us
         if (currentUser) load();
     }, [currentUser, load]);
 
-    // Lógica de Identidade de Empresa
     const activeCompanyId = impersonatedCompany?.id || currentUser?.companyId;
-    const isSuperAdmin = currentUser?.role === 'SuperAdmin';
-    const isImpersonating = !!impersonatedCompany;
+    const activeCompanyName = impersonatedCompany?.name || rawCompanies.find(c => c.id === currentUser?.companyId)?.name || 'Nexus Manager';
 
-    // --- FILTROS DE MULTI-TENANCY ---
-    // Se for SuperAdmin e não estiver personificando, vê tudo. Caso contrário, vê apenas o da empresa ativa.
-    const filterByCompany = <T extends { companyId?: string; id?: string }>(data: T[]): T[] => {
-        if (isSuperAdmin && !isImpersonating) return data;
-        return data.filter(item => item.companyId === activeCompanyId);
+    const clients = useMemo(() => rawClients.filter(c => c.companyId === activeCompanyId), [rawClients, activeCompanyId]);
+    const partners = useMemo(() => rawPartners.filter(p => p.companyId === activeCompanyId), [rawPartners, activeCompanyId]);
+    const projects = useMemo(() => rawProjects.filter(p => p.companyId === activeCompanyId), [rawProjects, activeCompanyId]);
+    const saasProducts = useMemo(() => rawSaaSProducts.filter(s => s.companyId === activeCompanyId), [rawSaaSProducts, activeCompanyId]);
+    const users = useMemo(() => rawUsers.filter(u => u.companyId === activeCompanyId), [rawUsers, activeCompanyId]);
+    const leads = useMemo(() => rawLeads.filter(l => l.companyId === activeCompanyId), [rawLeads, activeCompanyId]);
+    const transactions = useMemo(() => rawTransactions.filter(t => t.companyId === activeCompanyId), [rawTransactions, activeCompanyId]);
+    const companies = rawCompanies;
+
+    const generateId = (prefix: string) => `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    const addClient = async (client: Omit<Client, 'id' | 'companyId'>) => {
+        const newItem = { ...client, id: generateId('cli'), companyId: activeCompanyId };
+        await api.saveItem('clients', newItem);
+        setRawClients(prev => [...prev, newItem as Client]);
+        closeModal();
     };
 
-    const clients = useMemo(() => filterByCompany(rawClients), [rawClients, activeCompanyId, isSuperAdmin, isImpersonating]);
-    const partners = useMemo(() => filterByCompany(rawPartners), [rawPartners, activeCompanyId, isSuperAdmin, isImpersonating]);
-    const projects = useMemo(() => filterByCompany(rawProjects), [rawProjects, activeCompanyId, isSuperAdmin, isImpersonating]);
-    const saasProducts = useMemo(() => filterByCompany(rawSaaSProducts), [rawSaaSProducts, activeCompanyId, isSuperAdmin, isImpersonating]);
-    const users = useMemo(() => filterByCompany(rawUsers), [rawUsers, activeCompanyId, isSuperAdmin, isImpersonating]);
-    const leads = useMemo(() => filterByCompany(rawLeads), [rawLeads, activeCompanyId, isSuperAdmin, isImpersonating]);
-    const transactions = useMemo(() => filterByCompany(rawTransactions), [rawTransactions, activeCompanyId, isSuperAdmin, isImpersonating]);
-    
-    // Empresas: SuperAdmin vê todas, User vê apenas a sua
-    const companies = useMemo(() => {
-        if (isSuperAdmin) return rawCompanies;
-        return rawCompanies.filter(c => c.id === currentUser?.companyId);
-    }, [rawCompanies, currentUser, isSuperAdmin]);
+    const updateClient = async (client: Client) => {
+        await api.updateItem('clients', client);
+        setRawClients(prev => prev.map(c => c.id === client.id ? client : c));
+        closeModal();
+    };
 
-    const myCompany = useMemo(() => rawCompanies.find(c => c.id === activeCompanyId), [rawCompanies, activeCompanyId]);
-    const activeCompanyName = myCompany?.name || 'Nexus';
+    const deleteClient = async (id: string) => {
+        await api.deleteItem('clients', id);
+        setRawClients(prev => prev.filter(c => c.id !== id));
+    };
 
-    const checkPlanLimits = useCallback((feature: 'projects' | 'users' | 'whatsapp' | 'leadGen' | 'leads'): boolean => {
-        if (isSuperAdmin && !isImpersonating) return true;
+    const addPartner = async (partner: Omit<Partner, 'id' | 'isAvailable' | 'companyId'>) => {
+        const newItem = { ...partner, id: generateId('par'), companyId: activeCompanyId, isAvailable: true };
+        await api.saveItem('partners', newItem);
+        setRawPartners(prev => [...prev, newItem as Partner]);
+        closeModal();
+    };
+
+    const updatePartner = async (partner: Partner) => {
+        await api.updateItem('partners', partner);
+        setRawPartners(prev => prev.map(p => p.id === partner.id ? partner : p));
+        closeModal();
+    };
+
+    const deletePartner = async (id: string) => {
+        await api.deleteItem('partners', id);
+        setRawPartners(prev => prev.filter(p => p.id !== id));
+    };
+
+    const addProject = async (project: any) => {
+        const payments: Payment[] = [];
+        const installments = parseInt(project.installments || '1');
+        const installmentValue = (project.value - (project.downPayment || 0)) / installments;
         
-        const currentPlanName = myCompany?.plan || 'Starter';
-        const planConfig = PLANS.find(p => p.name === currentPlanName);
+        const firstDate = project.firstPaymentDate ? new Date(project.firstPaymentDate) : new Date();
         
-        if (!planConfig) return true;
-
-        switch (feature) {
-            case 'users':
-                if (users.length >= planConfig.limits.users) {
-                    alert(`Seu plano ${currentPlanName} permite apenas ${planConfig.limits.users} usuário(s). Faça upgrade para adicionar mais.`);
-                    return false;
-                }
-                break;
-            case 'leads':
-                if (leads.length >= planConfig.limits.leads) {
-                    alert(`Seu plano ${currentPlanName} atingiu o limite de ${planConfig.limits.leads} leads. Faça upgrade agora.`);
-                    return false;
-                }
-                break;
-            case 'whatsapp':
-                if (!planConfig.limits.hasWhatsApp) {
-                    alert(`A automação de WhatsApp está disponível apenas no plano VIP.`);
-                    return false;
-                }
-                break;
-            case 'leadGen':
-                if (!planConfig.limits.hasLeadGen) {
-                    alert(`A Captação Inteligente está disponível apenas no plano VIP.`);
-                    return false;
-                }
-                break;
+        for (let i = 0; i < installments; i++) {
+            const dueDate = new Date(firstDate);
+            dueDate.setMonth(dueDate.getMonth() + i);
+            payments.push({
+                id: generateId('pay'),
+                amount: installmentValue,
+                dueDate: dueDate.toISOString().split('T')[0],
+                status: 'Pendente'
+            });
         }
-        return true;
-    }, [myCompany, users.length, leads.length, isSuperAdmin, isImpersonating]);
 
-    const addProject = useCallback(async (data: any) => {
-        if (!activeCompanyId) return;
-        const newItem = { ...data, id: `proj${Date.now()}`, companyId: activeCompanyId, status: 'Pendente', progress: 0, activities: [] };
-        await api.saveItem('projects', newItem); setRawProjects(prev => [...prev, newItem]); closeModal();
-    }, [activeCompanyId, closeModal]);
+        if (project.downPayment > 0) {
+            payments.unshift({
+                id: generateId('pay'),
+                amount: project.downPayment,
+                dueDate: new Date().toISOString().split('T')[0],
+                status: 'Pago',
+                paidDate: new Date().toISOString()
+            });
+        }
 
-    const addClient = useCallback(async (data: any) => {
-        if (!activeCompanyId) return;
-        const newItem = { ...data, id: `cli${Date.now()}`, companyId: activeCompanyId };
-        await api.saveItem('clients', newItem); setRawClients(prev => [...prev, newItem]); closeModal();
-    }, [activeCompanyId, closeModal]);
+        const newItem = { 
+            ...project, 
+            id: generateId('prj'), 
+            companyId: activeCompanyId, 
+            status: 'Pendente', 
+            progress: 0, 
+            payments, 
+            activities: [] 
+        };
+        await api.saveItem('projects', newItem);
+        setRawProjects(prev => [...prev, newItem as Project]);
+        closeModal();
+    };
 
-    const addPartner = useCallback(async (data: any) => {
-        if (!activeCompanyId) return;
-        const newItem = { ...data, id: `par${Date.now()}`, companyId: activeCompanyId, isAvailable: true };
-        await api.saveItem('partners', newItem); setRawPartners(prev => [...prev, newItem]); closeModal();
-    }, [activeCompanyId, closeModal]);
+    const updateProject = async (project: Project) => {
+        await api.updateItem('projects', project);
+        setRawProjects(prev => prev.map(p => p.id === project.id ? project : p));
+        closeModal();
+    };
 
-    const addUser = useCallback(async (data: any) => {
-        const target = data.companyId || activeCompanyId;
-        const pass = data.password || Math.random().toString(36).slice(-8);
-        const newItem = { ...data, id: `user${Date.now()}`, companyId: target, password: pass };
-        await api.saveItem('users', newItem); setRawUsers(prev => [...prev, newItem]);
-        openModal('Usuário Criado', <PasswordDisplay user={newItem} />);
-    }, [activeCompanyId, openModal]);
+    const deleteProject = async (id: string) => {
+        await api.deleteItem('projects', id);
+        setRawProjects(prev => prev.filter(p => p.id !== id));
+    };
 
-    const addLead = useCallback(async (data: any) => {
-        if (!activeCompanyId) return;
-        const newItem = { ...data, id: `lead${Date.now()}`, companyId: activeCompanyId, createdAt: new Date().toISOString(), messages: data.messages || [] };
-        await api.saveItem('leads', newItem); setRawLeads(prev => [...prev, newItem]); closeModal();
-    }, [activeCompanyId, closeModal]);
+    const addSaaSProduct = async (product: any) => {
+        const newItem = { ...product, id: generateId('saas'), companyId: activeCompanyId };
+        await api.saveItem('saasProducts', newItem);
+        setRawSaaSProducts(prev => [...prev, newItem as SaaSProduct]);
+        closeModal();
+    };
 
-    const addTransaction = useCallback(async (data: any) => {
-        if (!activeCompanyId) return;
-        const newItem = { ...data, id: `tr${Date.now()}`, companyId: activeCompanyId };
-        await api.saveItem('transactions', newItem); setRawTransactions(prev => [...prev, newItem]); closeModal();
-    }, [activeCompanyId, closeModal]);
+    const updateSaaSProduct = async (product: SaaSProduct) => {
+        await api.updateItem('saasProducts', product);
+        setRawSaaSProducts(prev => prev.map(s => s.id === product.id ? product : s));
+        closeModal();
+    };
 
-    const updateGeneric = async (coll: string, item: any, setter: any) => {
-        await api.updateItem(coll, item);
-        setter((prev: any[]) => prev.map(i => i.id === item.id ? item : i));
+    const deleteSaaSProduct = async (id: string) => {
+        await api.deleteItem('saasProducts', id);
+        setRawSaaSProducts(prev => prev.filter(s => s.id !== id));
+    };
+
+    const addUser = async (user: any) => {
+        const newItem = { ...user, id: generateId('usr') };
+        await api.saveItem('users', newItem);
+        setRawUsers(prev => [...prev, newItem as User]);
+        closeModal();
+    };
+
+    const updateUser = async (user: User) => {
+        await api.updateItem('users', user);
+        setRawUsers(prev => prev.map(u => u.id === user.id ? user : u));
+        if (currentUser?.id === user.id) setCurrentUser(user);
+        closeModal();
+    };
+
+    const deleteUser = async (id: string) => {
+        await api.deleteItem('users', id);
+        setRawUsers(prev => prev.filter(u => u.id !== id));
+    };
+
+    const addLead = async (lead: any) => {
+        const newItem = { ...lead, id: generateId('lead'), companyId: activeCompanyId, createdAt: new Date().toISOString(), messages: lead.messages || [] };
+        await api.saveItem('leads', newItem);
+        setRawLeads(prev => [...prev, newItem as Lead]);
+        closeModal();
+    };
+
+    const updateLead = async (lead: Lead) => {
+        await api.updateItem('leads', lead);
+        setRawLeads(prev => prev.map(l => l.id === lead.id ? lead : l));
+        closeModal();
+    };
+
+    const deleteLead = async (id: string) => {
+        await api.deleteItem('leads', id);
+        setRawLeads(prev => prev.filter(l => l.id !== id));
+    };
+
+    const addTransaction = async (transaction: any) => {
+        const newItem = { ...transaction, id: generateId('tra'), companyId: activeCompanyId };
+        await api.saveItem('transactions', newItem);
+        setRawTransactions(prev => [...prev, newItem as Transaction]);
+        closeModal();
+    };
+
+    const updateTransaction = async (transaction: Transaction) => {
+        await api.updateItem('transactions', transaction);
+        setRawTransactions(prev => prev.map(t => t.id === transaction.id ? transaction : t));
+        closeModal();
+    };
+
+    const deleteTransaction = async (id: string) => {
+        await api.deleteItem('transactions', id);
+        setRawTransactions(prev => prev.filter(t => t.id !== id));
+    };
+
+    const addCompany = async (data: any) => {
+        const result = await api.register(data.adminUser, data.name);
+        if (result && result.user) {
+            await load();
+            closeModal();
+        }
+    };
+
+    const updateCompany = async (company: Company) => {
+        await api.updateItem('companies', company);
+        setRawCompanies(prev => prev.map(c => c.id === company.id ? company : c));
+        closeModal();
+    };
+
+    const updatePaymentStatus = async (projectId: string, paymentId: string, status: TransactionStatus) => {
+        const project = rawProjects.find(p => p.id === projectId);
+        if (project) {
+            const updatedPayments = project.payments.map(p => 
+                p.id === paymentId ? { ...p, status, paidDate: status === 'Pago' ? new Date().toISOString() : undefined } : p
+            );
+            await updateProject({ ...project, payments: updatedPayments });
+        }
+    };
+
+    const checkPlanLimits = (feature: string) => {
+        const myComp = rawCompanies.find(c => c.id === currentUser?.companyId);
+        if (!myComp) return true;
+        const plan = PLANS.find(p => p.name === (myComp.plan || 'Starter'));
+        if (!plan) return true;
+
+        switch(feature) {
+            case 'users': return users.length < plan.limits.users;
+            case 'leads': return leads.length < plan.limits.leads;
+            case 'leadGen': return plan.limits.hasLeadGen;
+            default: return true;
+        }
     };
 
     const value: DataContextType = {
-        currentUser, activeCompanyName, activeCompanyId,
-        clients, partners, projects, saasProducts, users, companies, leads, transactions,
-        addClient, addPartner, addProject, addSaaSProduct: async () => {}, addCompany: async () => {}, addUser, addLead, addTransaction,
-        updateClient: (i: any) => updateGeneric('clients', i, setRawClients).then(closeModal),
-        updatePartner: (i: any) => updateGeneric('partners', i, setRawPartners).then(closeModal),
-        updateProject: (i: any) => updateGeneric('projects', i, setRawProjects).then(closeModal),
-        updateSaaSProduct: async () => {},
-        updateCompany: (i: any) => updateGeneric('companies', i, setRawCompanies).then(closeModal),
-        updateUser: (i: any) => updateGeneric('users', i, setRawUsers).then(closeModal),
-        updateLead: (i: any) => updateGeneric('leads', i, setRawLeads),
-        updateTransaction: (i: any) => updateGeneric('transactions', i, setRawTransactions).then(closeModal),
-        deleteClient: async () => {}, deletePartner: async () => {}, 
-        deleteProject: (id: string) => api.deleteItem('projects', id).then(() => setRawProjects(p => p.filter(x => x.id !== id))),
-        deleteSaaSProduct: async () => {}, deleteUser: async () => {}, 
-        deleteLead: (id: string) => api.deleteItem('leads', id).then(() => setRawLeads(l => l.filter(x => x.id !== id))),
-        deleteTransaction: (id: string) => api.deleteItem('transactions', id).then(() => setRawTransactions(t => t.filter(x => x.id !== id))),
-        updatePaymentStatus: async () => {}, paySubscription: async () => {}, recordSubscriptionPayment: async () => {},
-        openModal, closeModal, setActiveView, whatsappConfig, setWhatsappConfig: (c: any) => setWhatsappConfigState(c),
-        sendWhatsAppMessage: async () => true, checkPlanLimits
+        currentUser,
+        activeCompanyName,
+        activeCompanyId,
+        clients,
+        partners,
+        projects,
+        saasProducts,
+        users,
+        companies,
+        leads,
+        transactions,
+        addClient, updateClient, deleteClient,
+        addPartner, updatePartner, deletePartner,
+        addProject, updateProject, deleteProject,
+        addSaaSProduct, updateSaaSProduct, deleteSaaSProduct,
+        addCompany, updateCompany,
+        addUser, updateUser, deleteUser,
+        addLead, updateLead, deleteLead,
+        addTransaction, updateTransaction, deleteTransaction,
+        updatePaymentStatus,
+        paySubscription: async () => {}, 
+        recordSubscriptionPayment: async () => {},
+        openModal,
+        closeModal,
+        setActiveView,
+        checkPlanLimits
     };
 
-    return <DataContext.Provider value={value}>{children}<Modal isOpen={isModalOpen} onClose={closeModal} title={modalTitle} maxWidth={modalMaxWidth}>{modalContent}</Modal></DataContext.Provider>;
-}
+    return (
+        <DataContext.Provider value={value}>
+            {children}
+            <Modal isOpen={isModalOpen} onClose={closeModal} title={modalTitle} maxWidth={modalMaxWidth}>
+                {modalContent}
+            </Modal>
+        </DataContext.Provider>
+    );
+};

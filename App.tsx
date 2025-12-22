@@ -18,7 +18,7 @@ import AdminSubscriptionManager from './components/AdminSubscriptionManager';
 import LandingPage from './components/LandingPage';
 import AdvancedReports from './components/AdvancedReports';
 import { DataProvider } from './context/DataContext';
-import { RocketLaunchIcon } from './components/Icons';
+import { RocketLaunchIcon, WhatsAppIcon } from './components/Icons';
 import type { View, User, Company, BillingCycle } from './types';
 import { api } from './services/api';
 
@@ -138,7 +138,21 @@ const App: React.FC = () => {
         impersonatedCompany={impersonatedCompany}
         setActiveView={setActiveView}
     >
-      <div className="flex h-[100dvh] bg-slate-100 text-text-primary overflow-hidden">
+      <div className="flex h-[100dvh] bg-slate-100 text-text-primary overflow-hidden relative">
+        
+        {/* Floating Support Button inside App */}
+        <a 
+            href="https://wa.me/5513996104848?text=Olá,%20sou%20usuário%20do%20Nexus%20Manager%20e%20preciso%20de%20suporte." 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="fixed bottom-6 right-6 z-[60] bg-[#25D366] text-white p-3.5 rounded-full shadow-2xl hover:scale-110 transition-all duration-300 group"
+        >
+            <WhatsAppIcon className="w-7 h-7" />
+            <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap pointer-events-none">
+                Suporte Oficial WhatsApp <br/> Redirecionando agora...
+            </span>
+        </a>
+
         <Sidebar 
             currentUser={currentUser} 
             activeView={activeView} 
@@ -172,14 +186,24 @@ const App: React.FC = () => {
                 </div>
             )}
             
-            <main className="flex-1 p-4 sm:p-6 overflow-y-auto bg-slate-50 w-full custom-scrollbar">
-                <div className="max-w-7xl mx-auto w-full">
+            <main className="flex-1 p-4 sm:p-6 overflow-y-auto bg-slate-50 w-full custom-scrollbar flex flex-col">
+                <div className="max-w-7xl mx-auto w-full flex-1">
                     <div key={activeView}>
                         <ErrorBoundary>
                             {renderView()}
                         </ErrorBoundary>
                     </div>
                 </div>
+
+                {/* Footer Internal App */}
+                <footer className="mt-12 py-6 border-t border-slate-200 text-center space-y-2 shrink-0">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                        © 2025 NEXUS MANAGER. ALL RIGHTS RESERVED.
+                    </p>
+                    <p className="text-[10px] font-bold text-slate-900 uppercase tracking-tighter">
+                        Desenvolvido pela <span className="text-blue-600">GTS - Global Tech Software</span>
+                    </p>
+                </footer>
             </main>
         </div>
       </div>

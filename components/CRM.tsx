@@ -33,21 +33,13 @@ const LeadChat: React.FC<{ lead: Lead, onSendMessage: (text: string) => Promise<
         setNewMessage('');
     };
 
-    const openWhatsAppWeb = () => {
-        const cleanPhone = lead.phone.replace(/\D/g, '');
-        // Adiciona 55 se não tiver (assumindo Brasil)
-        const finalPhone = cleanPhone.length <= 11 ? `55${cleanPhone}` : cleanPhone;
-        const text = encodeURIComponent(newMessage || "Olá, tudo bem?");
-        window.open(`https://wa.me/${finalPhone}?text=${text}`, '_blank');
-    };
-
     return (
         <div className="flex flex-col h-[400px]">
-            <div className="flex-1 overflow-y-auto space-y-4 p-4 bg-background/30 rounded-lg border border-white/10 mb-4 custom-scrollbar">
+             <div className="flex-1 overflow-y-auto space-y-4 p-4 bg-background/30 rounded-lg border border-white/10 mb-4 custom-scrollbar">
                 {messages.length === 0 && (
                     <div className="text-center mt-10 space-y-2">
-                        <p className="text-text-secondary text-sm">Nenhuma mensagem registrada no CRM.</p>
-                        <p className="text-xs text-text-secondary/60">As mensagens trocadas aqui são internas ou registros.</p>
+                        <p className="text-text-secondary text-sm">Nenhum histórico de conversa registrado.</p>
+                        <p className="text-xs text-text-secondary/60">As mensagens aqui servem para controle interno do lead.</p>
                     </div>
                 )}
                 {messages.map((msg) => (
@@ -67,28 +59,18 @@ const LeadChat: React.FC<{ lead: Lead, onSendMessage: (text: string) => Promise<
                 <div ref={messagesEndRef} />
             </div>
             
-            <div className="flex flex-col gap-2">
-                <form onSubmit={handleSend} className="flex gap-2">
-                    <input 
-                        type="text" 
-                        value={newMessage} 
-                        onChange={e => setNewMessage(e.target.value)}
-                        placeholder="Digite sua mensagem..."
-                        className="flex-1 px-4 py-2 bg-surface border border-white/20 rounded-full focus:outline-none focus:ring-2 focus:ring-primary text-text-primary"
-                    />
-                    <button type="submit" className="bg-surface border border-white/20 p-2 rounded-full text-text-secondary hover:text-white transition-colors" title="Salvar no Histórico (Interno)">
-                        <PaperAirplaneIcon className="w-5 h-5" />
-                    </button>
-                </form>
-                <button 
-                    type="button"
-                    onClick={openWhatsAppWeb}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg flex items-center justify-center gap-2 transition-colors font-medium text-sm"
-                >
-                    <ChatBubbleLeftRightIcon className="w-5 h-5" />
-                    Abrir Conversa no WhatsApp Web
+            <form onSubmit={handleSend} className="flex gap-2">
+                <input 
+                    type="text" 
+                    value={newMessage} 
+                    onChange={e => setNewMessage(e.target.value)}
+                    placeholder="Registrar anotação de conversa..."
+                    className="flex-1 px-4 py-2 bg-surface border border-white/20 rounded-full focus:outline-none focus:ring-2 focus:ring-primary text-text-primary"
+                />
+                <button type="submit" className="bg-primary p-2 rounded-full text-white shadow-lg shadow-primary/20">
+                    <PaperAirplaneIcon className="w-5 h-5" />
                 </button>
-            </div>
+            </form>
         </div>
     );
 };
@@ -98,7 +80,7 @@ const LeadDetailsModal: React.FC<{
     onSave: (lead: Omit<Lead, 'id' | 'companyId' | 'createdAt'> | Lead) => Promise<void>; 
     onDelete?: (id: string) => void;
 }> = ({ lead, onSave, onDelete }) => {
-    const [activeTab, setActiveTab] = useState<'info' | 'whatsapp'>('info');
+    const [activeTab, setActiveTab] = useState<'info' | 'chat'>('info');
     const [formData, setFormData] = useState({
         name: lead?.name || '',
         phone: lead?.phone || '',
@@ -126,7 +108,7 @@ const LeadDetailsModal: React.FC<{
     };
 
     const handleSendMessage = async (text: string) => {
-        if (!lead) return; // Should not happen for existing leads
+        if (!lead) return;
         const newMessage: ChatMessage = {
             id: `msg-${Date.now()}`,
             text,
@@ -142,17 +124,17 @@ const LeadDetailsModal: React.FC<{
             <div className="flex justify-between items-center border-b border-white/10 mb-4">
                 <div className="flex">
                     <button 
-                        className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${activeTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
+                        className={`px-4 py-2 font-bold text-xs uppercase tracking-widest border-b-2 transition-all ${activeTab === 'info' ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
                         onClick={() => setActiveTab('info')}
                     >
                         Dados do Lead
                     </button>
                     {lead && (
                         <button 
-                            className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'whatsapp' ? 'border-green-500 text-green-500' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
-                            onClick={() => setActiveTab('whatsapp')}
+                            className={`px-4 py-2 font-bold text-xs uppercase tracking-widest border-b-2 transition-all flex items-center gap-2 ${activeTab === 'chat' ? 'border-primary text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
+                            onClick={() => setActiveTab('chat')}
                         >
-                            <ChatBubbleLeftRightIcon className="w-4 h-4" /> WhatsApp / Chat
+                            Histórico
                         </button>
                     )}
                 </div>
@@ -169,15 +151,15 @@ const LeadDetailsModal: React.FC<{
 
             {activeTab === 'info' ? (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <input type="text" name="name" placeholder="Nome do Lead / Empresa" value={formData.name} onChange={handleChange} required className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary" />
-                    <input type="tel" name="phone" placeholder="Telefone / WhatsApp" value={formData.phone} onChange={handleChange} required className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary" />
-                    <input type="email" name="email" placeholder="Email (Opcional)" value={formData.email} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary" />
+                    <input type="text" name="name" placeholder="Nome do Lead / Empresa" value={formData.name} onChange={handleChange} required className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none" />
+                    <input type="tel" name="phone" placeholder="Telefone" value={formData.phone} onChange={handleChange} required className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md" />
+                    <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md" />
                     <select name="status" value={formData.status} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md">
                         {statusColumns.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
-                    <textarea name="notes" placeholder="Anotações" value={formData.notes} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary" />
+                    <textarea name="notes" placeholder="Anotações" value={formData.notes} onChange={handleChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md h-24" />
                     <div className="text-right">
-                        <button type="submit" disabled={isSaving} className="bg-primary text-white px-4 py-2 rounded-lg shadow-md hover:bg-primary/90 transition-colors disabled:opacity-50">
+                        <button type="submit" disabled={isSaving} className="bg-primary text-white px-6 py-2 rounded-lg font-bold shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
                             {isSaving ? 'Salvando...' : 'Salvar Lead'}
                         </button>
                     </div>
@@ -188,7 +170,6 @@ const LeadDetailsModal: React.FC<{
         </div>
     );
 }
-
 
 const CRM: React.FC = () => {
     const { leads, addLead, updateLead, deleteLead, openModal, closeModal, checkPlanLimits } = useData();
@@ -215,9 +196,9 @@ const CRM: React.FC = () => {
 
     return (
         <div className="h-[calc(100vh-120px)] flex flex-col">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-3xl font-bold text-text-primary">CRM Pipeline</h2>
-                <button onClick={handleAddClick} className="bg-primary text-white px-4 py-2 rounded-lg shadow-md hover:bg-primary/90 transition-colors">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-3xl font-black text-text-primary uppercase tracking-tighter">CRM Pipeline</h2>
+                <button onClick={handleAddClick} className="bg-primary text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-105 transition-all">
                     + Novo Lead
                 </button>
             </div>
@@ -225,10 +206,10 @@ const CRM: React.FC = () => {
             <div className="flex-1 overflow-x-auto overflow-y-hidden">
                 <div className="flex gap-4 h-full min-w-[1200px]">
                     {statusColumns.map(column => (
-                        <div key={column} className="flex-1 min-w-[280px] bg-surface/50 rounded-lg border border-white/10 flex flex-col">
-                            <div className={`p-3 font-bold text-sm border-b border-white/10 flex justify-between items-center ${statusColors[column].split(' ')[2]}`}>
+                        <div key={column} className="flex-1 min-w-[280px] bg-surface/50 rounded-xl border border-white/10 flex flex-col shadow-inner">
+                            <div className={`p-4 font-black text-[10px] border-b border-white/10 flex justify-between items-center tracking-widest ${statusColors[column].split(' ')[2]}`}>
                                 <span>{column.toUpperCase()}</span>
-                                <span className="bg-black/30 px-2 py-0.5 rounded-full text-xs">
+                                <span className="bg-black/20 px-2 py-0.5 rounded-full">
                                     {leads.filter(l => l.status === column).length}
                                 </span>
                             </div>
@@ -237,34 +218,25 @@ const CRM: React.FC = () => {
                                     <div 
                                         key={lead.id} 
                                         onClick={() => handleCardClick(lead)}
-                                        className={`p-4 rounded-lg border shadow-sm cursor-pointer hover:shadow-md transition-all hover:scale-[1.02] bg-surface border-white/10 group`}
+                                        className="p-4 rounded-xl border shadow-sm cursor-pointer hover:shadow-xl transition-all hover:scale-[1.02] bg-white border-white/10 group"
                                     >
-                                        <h4 className="font-bold text-text-primary">{lead.name}</h4>
+                                        <h4 className="font-bold text-text-primary uppercase tracking-tighter text-sm">{lead.name}</h4>
+                                        <p className="text-[10px] font-mono text-text-secondary mt-1">{lead.phone}</p>
                                         
-                                        <div className="flex items-center gap-2 mt-2 text-xs text-text-secondary">
-                                            <PhoneIcon className="w-3 h-3" /> {lead.phone}
-                                        </div>
-                                        {lead.messages && lead.messages.length > 0 && (
-                                            <div className="flex items-center gap-2 mt-2 text-xs text-green-400 bg-green-400/10 p-1 rounded w-fit">
-                                                <ChatBubbleLeftRightIcon className="w-3 h-3" /> 
-                                                {lead.messages.length} mensagens
-                                            </div>
-                                        )}
-                                        
-                                        <div className="mt-3 pt-3 border-t border-white/10 flex justify-between items-center text-xs">
-                                            <span className="text-text-secondary">{lead.source}</span>
+                                        <div className="mt-4 pt-3 border-t border-white/5 flex justify-between items-center text-[10px]">
+                                            <span className="text-text-secondary font-black uppercase opacity-50">{lead.source}</span>
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button 
                                                     onClick={(e) => handleMoveStatus(e, lead, 'prev')}
                                                     disabled={column === 'Novo'}
-                                                    className="px-2 py-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-30"
+                                                    className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center hover:bg-slate-200 disabled:opacity-30"
                                                 >
                                                     ←
                                                 </button>
                                                 <button 
                                                     onClick={(e) => handleMoveStatus(e, lead, 'next')}
                                                     disabled={column === 'Perdido'}
-                                                    className="px-2 py-1 rounded bg-white/5 hover:bg-white/10 disabled:opacity-30"
+                                                    className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center hover:bg-slate-200 disabled:opacity-30"
                                                 >
                                                     →
                                                 </button>

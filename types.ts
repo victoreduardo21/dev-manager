@@ -1,12 +1,15 @@
 
-// Fix: Import React to resolve "Cannot find namespace 'React'" error.
 import React from 'react';
 
 export type View = 'Dashboard' | 'CRM' | 'Captação' | 'Clientes' | 'Parceiros' | 'Projetos' | 'SaaS' | 'Financeiro' | 'Empresas' | 'Usuários' | 'Configuração' | 'Assinatura' | 'Gerenciar Assinaturas' | 'Relatórios';
 
 export type Currency = 'BRL' | 'USD' | 'EUR';
 export type ProjectStatus = 'Pendente' | 'Em Andamento' | 'Concluído' | 'Atrasado';
-export type ProjectCategory = 'Site' | 'Sistema' | 'App' | 'Marketing' | 'Consultoria' | 'Outro';
+/**
+ * Represents the category of a project. 
+ * Added 'Outro' to align with the values used in ProjectManager.tsx.
+ */
+export type ProjectCategory = 'Site' | 'Sistema' | 'App' | 'Marketing' | 'Consultoria' | 'Geral' | 'Outro';
 export type UserRole = 'SuperAdmin' | 'Admin' | 'User';
 export type SubscriptionStatus = 'Ativa' | 'Inativa';
 export type LeadStatus = 'Novo' | 'Contatado' | 'Qualificado' | 'Proposta' | 'Ganho' | 'Perdido';
@@ -48,6 +51,7 @@ export interface Transaction {
     amount: number;
     date: string;
     status: TransactionStatus;
+    type: 'Receita' | 'Despesa';
     category: string; 
 }
 
@@ -153,13 +157,6 @@ export interface Lead {
     messages: ChatMessage[];
 }
 
-export interface WhatsAppConfig {
-    apiUrl: string;
-    apiToken: string;
-    instanceName: string;
-    isConnected: boolean;
-}
-
 export interface DataContextType {
     currentUser: User | null;
     activeCompanyName: string;
@@ -172,8 +169,6 @@ export interface DataContextType {
     companies: Company[];
     leads: Lead[];
     transactions: Transaction[]; 
-    whatsappConfig: WhatsAppConfig;
-    setWhatsappConfig: (config: WhatsAppConfig) => void;
     addClient: (client: Omit<Client, 'id' | 'companyId'>) => Promise<void>;
     addPartner: (partner: Omit<Partner, 'id' | 'isAvailable' | 'companyId'>) => Promise<void>;
     addProject: (project: Omit<Project, 'id' | 'payments' | 'status' | 'progress' | 'activities' | 'companyId'>) => Promise<void>;
@@ -197,12 +192,11 @@ export interface DataContextType {
     deleteUser: (id: string) => Promise<void>;
     deleteLead: (id: string) => Promise<void>;
     deleteTransaction: (id: string) => Promise<void>; 
-    updatePaymentStatus: (projectId: string, paymentId: string, newStatus: 'Pago' | 'Pendente' | 'Atrasado') => Promise<void>;
+    updatePaymentStatus: (projectId: string, paymentId: string, newStatus: TransactionStatus) => Promise<void>;
     paySubscription: (companyId: string, cardDetails?: { last4: string; expiry: string; }) => Promise<void>;
     recordSubscriptionPayment: (companyId: string) => Promise<void>;
     openModal: (title: string, content: React.ReactNode, maxWidth?: string) => void;
     closeModal: () => void;
     setActiveView: (view: View) => void;
-    sendWhatsAppMessage: (phone: string, message: string) => Promise<boolean>;
-    checkPlanLimits: (feature: 'projects' | 'users' | 'whatsapp' | 'leadGen' | 'leads') => boolean;
+    checkPlanLimits: (feature: 'projects' | 'users' | 'leadGen' | 'leads') => boolean;
 }

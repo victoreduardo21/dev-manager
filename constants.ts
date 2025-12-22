@@ -18,12 +18,11 @@ export const PLANS = [
         limits: {
             users: 1,
             leads: 50,
-            hasWhatsApp: false,
             hasLeadGen: false,
             hasAdvancedReports: false
         },
         features: [
-            "CRM de Vendas (Até 50 Leads/Semana)",
+            "CRM de Vendas Básico",
             "Gestão de Projetos Básica",
             "1 Usuário Admin",
             "Relatórios Financeiros Simples",
@@ -38,7 +37,6 @@ export const PLANS = [
         limits: {
             users: 3,
             leads: 999999,
-            hasWhatsApp: false,
             hasLeadGen: false,
             hasAdvancedReports: true
         },
@@ -47,8 +45,7 @@ export const PLANS = [
             "Gestão de Projetos Completa",
             "Até 3 Usuários na Equipe",
             "Agenda Financeira & Fluxo de Caixa",
-            "Relatórios de Performance Avançados",
-            "Prioridade no Suporte"
+            "Relatórios de Performance Avançados"
         ],
         highlight: true,
         tag: 'Mais Vendido'
@@ -60,17 +57,15 @@ export const PLANS = [
         limits: {
             users: 999999,
             leads: 999999,
-            hasWhatsApp: true,
             hasLeadGen: true,
             hasAdvancedReports: true
         },
         features: [
             "Tudo do plano PRO",
             "Equipe Ilimitada",
-            "Automação WhatsApp API Nativa",
             "Captação de Leads IA (Deep Search)",
             "Gerente de Contas Dedicado",
-            "Acesso Antecipado a Recursos"
+            "Análise de Dados com I.A"
         ],
         highlight: false,
         tag: 'Elite'

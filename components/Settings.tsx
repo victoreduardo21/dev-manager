@@ -1,37 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
-import { PhoneIcon, CheckBadgeIcon, CloudIcon, RocketLaunchIcon, CreditCardIcon, UserPlusIcon } from './Icons';
+import { RocketLaunchIcon } from './Icons';
 import { CURRENCY_SYMBOLS } from '../constants';
 import UpgradeModal from './UpgradeModal';
 import type { Company, BillingCycle } from '../types';
 
-const ToggleSwitch: React.FC<{ enabled: boolean, setEnabled: (enabled: boolean) => void }> = ({ enabled, setEnabled }) => (
-    <button
-        type="button"
-        className={`${
-        enabled ? 'bg-primary' : 'bg-gray-600'
-        } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface`}
-        onClick={() => setEnabled(!enabled)}
-    >
-        <span
-        className={`${
-            enabled ? 'translate-x-5' : 'translate-x-0'
-        } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
-        />
-    </button>
-);
-
 const Settings: React.FC = () => {
-    const { currentUser, updateUser, whatsappConfig, setWhatsappConfig, companies, openModal, closeModal, updateCompany } = useData();
-    const [emailNotifications, setEmailNotifications] = useState(true);
+    const { currentUser, updateUser, companies, openModal, closeModal, updateCompany } = useData();
     
-    // Configurações Globais Hardcoded conforme solicitado anteriormente
-    const WA_CONFIG = {
-        apiUrl: "https://api.seudominio.com", 
-        apiToken: "SEU_TOKEN_GLOBAL_AQUI",    
-        instanceName: "MinhaInstancia"        
-    };
-
     const myCompany = companies.find(c => c.id === currentUser?.companyId);
 
     const [formData, setFormData] = useState({
@@ -41,9 +18,6 @@ const Settings: React.FC = () => {
         cpf: ''
     });
 
-    const [qrCode, setQrCode] = useState<string | null>(null);
-    const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'connecting' | 'qrcode'>('disconnected');
-    const [waLoading, setWaLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [successMsg, setSuccessMsg] = useState('');
     
@@ -56,10 +30,7 @@ const Settings: React.FC = () => {
                 cpf: currentUser.cpf || ''
             });
         }
-        if (whatsappConfig && whatsappConfig.isConnected) {
-            setConnectionStatus('connected');
-        }
-    }, [currentUser, whatsappConfig]);
+    }, [currentUser]);
 
     if (!currentUser) return null;
 
@@ -84,57 +55,6 @@ const Settings: React.FC = () => {
             setSuccessMsg('Erro ao atualizar.');
         } finally {
             setIsSaving(false);
-        }
-    };
-
-    // --- WhatsApp Logic ---
-    const updateGlobalConfig = (isConnected: boolean) => {
-        setWhatsappConfig({
-            apiUrl: WA_CONFIG.apiUrl,
-            apiToken: WA_CONFIG.apiToken,
-            instanceName: WA_CONFIG.instanceName,
-            isConnected: isConnected
-        });
-    };
-
-    const connectWhatsApp = async () => {
-        setWaLoading(true);
-        try {
-            updateGlobalConfig(false);
-            const response = await fetch(`${WA_CONFIG.apiUrl}/instance/connect/${WA_CONFIG.instanceName}`, {
-                method: 'GET',
-                headers: { 'apikey': WA_CONFIG.apiToken, 'Authorization': `Bearer ${WA_CONFIG.apiToken}` }
-            });
-            const data = await response.json();
-            if (data.base64 || (data.qrcode && data.qrcode.base64)) {
-                setQrCode(data.base64 || data.qrcode.base64);
-                setConnectionStatus('qrcode');
-            } else if (data.instance && data.instance.status === 'open') {
-                setConnectionStatus('connected');
-                updateGlobalConfig(true);
-            }
-        } catch (error) {
-            setConnectionStatus('disconnected');
-        } finally {
-            setWaLoading(false);
-        }
-    };
-
-    const disconnectWhatsApp = async () => {
-        if (!confirm('Desconectar WhatsApp?')) return;
-        setWaLoading(true);
-        try {
-            await fetch(`${WA_CONFIG.apiUrl}/instance/logout/${WA_CONFIG.instanceName}`, {
-                method: 'DELETE',
-                headers: { 'apikey': WA_CONFIG.apiToken, 'Authorization': `Bearer ${WA_CONFIG.apiToken}` }
-            });
-            setConnectionStatus('disconnected');
-            setQrCode(null);
-            updateGlobalConfig(false);
-        } catch (e) {
-            setConnectionStatus('disconnected');
-        } finally {
-            setWaLoading(false);
         }
     };
 
@@ -271,49 +191,6 @@ const Settings: React.FC = () => {
                 {successMsg && <span className="text-sm text-green-500 font-bold animate-fade-in">{successMsg}</span>}
              </div>
           </div>
-        </div>
-
-        {/* === CARD WHATSAPP === */}
-        <div className="bg-surface p-8 rounded-lg shadow-lg border border-white/10">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
-                    <PhoneIcon className="w-6 h-6 text-green-500" />
-                    Integração WhatsApp
-                </h3>
-                <div className={`px-3 py-1 rounded-full text-[10px] font-bold flex items-center gap-2 ${connectionStatus === 'connected' ? 'bg-green-500/20 text-green-400 border border-green-400/30' : 'bg-red-500/20 text-red-400 border border-red-400/30'}`}>
-                    <div className={`w-1.5 h-1.5 rounded-full ${connectionStatus === 'connected' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
-                    {connectionStatus === 'connected' ? 'CONECTADO' : 'DESCONECTADO'}
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                <div className="space-y-4">
-                    <p className="text-sm text-text-secondary leading-relaxed">Conecte sua instância para automatizar o envio de mensagens pelo CRM e pela Captação Inteligente.</p>
-                    <div className="flex gap-2">
-                        {connectionStatus === 'connected' ? (
-                            <button onClick={disconnectWhatsApp} disabled={waLoading} className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-bold transition-all shadow-md">Desconectar</button>
-                        ) : (
-                            <button onClick={connectWhatsApp} disabled={waLoading} className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-bold transition-all shadow-md">Gerar QR Code</button>
-                        )}
-                    </div>
-                </div>
-
-                <div className="flex items-center justify-center bg-background/50 rounded-lg border border-white/10 min-h-[220px] p-4">
-                    {qrCode ? (
-                        <div className="text-center">
-                            <div className="bg-white p-3 rounded-xl shadow-inner inline-block mb-3 border border-slate-200">
-                                <img src={qrCode} alt="QR Code WhatsApp" className="w-36 h-36" />
-                            </div>
-                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest animate-pulse">Escaneie no seu celular</p>
-                        </div>
-                    ) : (
-                        <div className="text-center text-slate-400 opacity-40">
-                            <PhoneIcon className="w-16 h-16 mx-auto mb-3" />
-                            <p className="text-xs font-medium uppercase tracking-widest">Aguardando Conexão</p>
-                        </div>
-                    )}
-                </div>
-            </div>
         </div>
       </div>
     </div>

@@ -122,9 +122,11 @@ const TransactionForm: React.FC<{
     const [amount, setAmount] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [status, setStatus] = useState<TransactionStatus>('Pendente');
+    const [type, setType] = useState<'Receita' | 'Despesa'>('Receita'); // Added missing type state
     const [category, setCategory] = useState('Atualização');
     const [isSaving, setIsSaving] = useState(false);
 
+    // Fix: Include the required 'type' property in the transaction object passed to onSave.
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!desc || !amount || !date) return;
@@ -135,6 +137,7 @@ const TransactionForm: React.FC<{
             amount: parseFloat(amount),
             date: date,
             status: status,
+            type: type, // Added missing type property
             category: category
         });
         // O modal fecha via contexto
@@ -185,15 +188,23 @@ const TransactionForm: React.FC<{
                     </select>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-text-secondary mb-1">Categoria</label>
-                    <input 
-                        type="text" 
-                        placeholder="Ex: Manutenção" 
-                        value={category} 
-                        onChange={e => setCategory(e.target.value)} 
-                        className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md text-text-primary"
-                    />
+                    {/* Added missing Type selection field */}
+                    <label className="block text-sm font-medium text-text-secondary mb-1">Tipo</label>
+                    <select value={type} onChange={e => setType(e.target.value as any)} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md text-text-primary">
+                        <option value="Receita">Receita</option>
+                        <option value="Despesa">Despesa</option>
+                    </select>
                 </div>
+            </div>
+            <div>
+                <label className="block text-sm font-medium text-text-secondary mb-1">Categoria</label>
+                <input 
+                    type="text" 
+                    placeholder="Ex: Manutenção" 
+                    value={category} 
+                    onChange={e => setCategory(e.target.value)} 
+                    className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md text-text-primary"
+                />
             </div>
             <button 
                 type="submit" 
@@ -667,5 +678,6 @@ export default function Financials() {
                 )}
             </div>
         </div>
-    );
+    </div>
+  );
 }

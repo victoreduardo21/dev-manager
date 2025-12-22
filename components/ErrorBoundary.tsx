@@ -1,10 +1,10 @@
 
-import React from "react";
+import React, { Component, ErrorInfo, ReactNode } from "react";
 import { ExclamationTriangleIcon } from "./Icons";
 
 // Define Props interface for the ErrorBoundary.
 interface Props {
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 // Define State interface for the ErrorBoundary.
@@ -16,37 +16,33 @@ interface State {
 /**
  * ErrorBoundary class component to catch rendering errors in its child tree.
  */
-// Fix: Explicitly use React.Component to ensure TypeScript correctly recognizes inherited properties like state and props.
-class ErrorBoundary extends React.Component<Props, State> {
-  // Use a constructor for explicit state initialization and base class setup.
-  constructor(props: Props) {
-    super(props);
-    // Fix: Correctly initialize state on this.state which is inherited from React.Component.
-    this.state = {
-      hasError: false,
-      error: null,
-    };
-  }
+// Fix: Extend Component directly from the named import to ensure inherited properties are correctly typed and visible to the compiler.
+class ErrorBoundary extends Component<Props, State> {
+  // Initialize state directly as a property.
+  public state: State = {
+    hasError: false,
+    error: null,
+  };
 
   // Standard React Error Boundary static method to update state when an error occurs.
-  static getDerivedStateFromError(error: Error): State {
+  public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  // Log error details using React.ErrorInfo type for debugging purposes.
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  // Log error details using ErrorInfo type for debugging purposes.
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
   }
 
   // Reset state to allow the UI to recover from the error state.
-  handleRetry = () => {
-    // Fix: Correctly call this.setState inherited from React.Component.
+  private handleRetry = () => {
+    // Correctly using inherited setState.
+    // Fix: Accessing setState method from the Component base class.
     this.setState({ hasError: false, error: null });
   };
 
-  render() {
-    // Check error state using this.state.
-    // Fix: Access this.state inherited from React.Component.
+  public render() {
+    // Correctly accessing inherited state.
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-surface rounded-lg border border-white/10">
@@ -68,8 +64,8 @@ class ErrorBoundary extends React.Component<Props, State> {
       );
     }
 
-    // Access children from this.props inherited from React.Component.
-    // Fix: Access this.props inherited from React.Component.
+    // Correctly accessing inherited props.
+    // Fix: Accessing props from the Component base class.
     return this.props.children;
   }
 }

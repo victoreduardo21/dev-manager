@@ -11,7 +11,6 @@ interface UpgradeModalProps {
 }
 
 const UpgradeModal: React.FC<UpgradeModalProps> = ({ currentPlan, onConfirm, onCancel }) => {
-    // Default to VIP if on PRO, otherwise null or PRO
     const [selectedPlan, setSelectedPlan] = useState<string | null>(
         currentPlan === 'PRO' ? 'VIP' : 'PRO'
     );
@@ -31,9 +30,8 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ currentPlan, onConfirm, onC
     return (
         <div className="flex flex-col h-full">
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <p className="text-text-secondary">Escolha o nível de controle que você deseja.</p>
+                <p className="text-text-secondary">Escolha o nível de controle que você deseja para sua agência.</p>
                 
-                {/* Toggle Switch inside Modal */}
                 <div className="flex items-center gap-3 bg-slate-100 p-1 rounded-full border border-slate-200">
                      <button 
                         onClick={() => setBillingCycle('monthly')}
@@ -52,6 +50,8 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ currentPlan, onConfirm, onC
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 px-2">
                 {PLANS.map((plan) => {
+                    if (plan.name === 'Starter' && currentPlan !== 'Starter') return null; // Não mostra downgrade para Starter se já estiver em plano superior
+                    
                     const isCurrent = plan.name === currentPlan;
                     const isSelected = selectedPlan === plan.name;
                     const isVip = plan.name === 'VIP';
@@ -71,14 +71,9 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ currentPlan, onConfirm, onC
                                 }
                             `}
                         >
-                            {plan.name === 'PRO' && (
-                                <div className="absolute top-4 left-4 w-6 h-6 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-xs">
-                                    !
-                                </div>
-                            )}
                              {isVip && (
                                 <div className="absolute top-4 left-4 bg-purple-100 text-purple-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
-                                    EXCLUSIVO
+                                    ESTRATEGISTA
                                 </div>
                             )}
 
@@ -107,18 +102,10 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ currentPlan, onConfirm, onC
                             <ul className="space-y-3 text-sm text-slate-600 flex-1">
                                 {plan.features.map((feature, i) => (
                                     <li key={i} className="flex items-start gap-3">
-                                        {feature.includes('Sem Automação') ? (
-                                             <LockClosedIcon className="w-5 h-5 shrink-0 text-slate-300" />
-                                        ) : isVip ? (
-                                             <div className="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center shrink-0 mt-0.5">
-                                                 <CheckBadgeIcon className="w-3 h-3 text-purple-600" />
-                                             </div>
-                                        ) : (
-                                            <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
-                                                 <CheckBadgeIcon className="w-3 h-3 text-green-600" />
-                                             </div>
-                                        )}
-                                        <span className={`font-medium ${feature.includes('Sem Automação') ? 'text-slate-400' : ''}`}>{feature}</span>
+                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${isVip ? 'bg-purple-100 text-purple-600' : 'bg-green-100 text-green-600'}`}>
+                                            <CheckBadgeIcon className="w-3 h-3" />
+                                        </div>
+                                        <span className="font-medium">{feature}</span>
                                     </li>
                                 ))}
                             </ul>

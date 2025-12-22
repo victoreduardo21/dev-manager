@@ -5,7 +5,7 @@ import {
     CloudIcon, ChevronRightIcon, FunnelIcon, CurrencyDollarIcon,
     RocketLaunchIcon, MapPinIcon, ChatBubbleLeftRightIcon,
     ExclamationTriangleIcon, StarIcon, ShieldCheckIcon, BoltIcon,
-    GlobeAltIcon
+    GlobeAltIcon, WhatsAppIcon
 } from './Icons';
 import { PLANS } from '../constants';
 import type { BillingCycle } from '../types';
@@ -79,6 +79,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-blue-600 selection:text-white">
+            
+            {/* Botão Flutuante WhatsApp */}
+            <a 
+                href="https://wa.me/5513996104848?text=Olá,%20gostaria%20de%20falar%20com%20o%20suporte%20do%20Nexus%20Manager." 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="fixed bottom-6 right-6 z-[60] bg-[#25D366] text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-all duration-300 group animate-bounce-subtle"
+            >
+                <WhatsAppIcon className="w-8 h-8" />
+                <span className="absolute right-full mr-4 top-1/2 -translate-y-1/2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap pointer-events-none">
+                    Clique aqui para ser redirecionado <br/> ao nosso atendimento
+                </span>
+            </a>
+
             {/* Navbar */}
             <nav className={`fixed w-full z-50 transition-all duration-500 ${scrolled ? 'bg-white/90 backdrop-blur-xl border-b border-slate-200 py-3 shadow-lg' : 'bg-transparent py-6'}`}>
                 <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
@@ -229,17 +243,27 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
             </section>
 
             {/* Footer */}
-            <footer className="bg-white py-24 text-slate-500 border-t border-slate-100">
+            <footer className="bg-white py-24 border-t border-slate-100">
                 <div className="max-w-7xl mx-auto px-6">
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-                        <div className="flex items-center gap-3">
-                            <RocketLaunchIcon className="w-8 h-8 text-blue-600" />
-                            <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">NEXUS<span className="text-blue-600">MANAGER</span></span>
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-10">
+                        <div className="flex flex-col items-center md:items-start gap-3">
+                            <div className="flex items-center gap-3">
+                                <RocketLaunchIcon className="w-8 h-8 text-blue-600" />
+                                <span className="text-xl font-black tracking-tighter text-slate-900 uppercase">NEXUS<span className="text-blue-600">MANAGER</span></span>
+                            </div>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center md:text-left">
+                                © 2025 NEXUS MANAGER. ALL RIGHTS RESERVED.
+                            </p>
                         </div>
-                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">© 2025 NEXUS MANAGER. ALL RIGHTS RESERVED.</p>
-                        <div className="flex gap-6">
-                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-blue-50 transition-colors cursor-pointer"><UsersIcon className="w-4 h-4" /></div>
-                             <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-blue-50 transition-colors cursor-pointer"><GlobeAltIcon className="w-4 h-4" /></div>
+                        
+                        <div className="flex flex-col items-center md:items-end gap-2">
+                             <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest">
+                                Desenvolvido pela GTS - Global Tech Software
+                             </p>
+                             <div className="flex gap-4">
+                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-blue-50 transition-colors cursor-pointer"><UsersIcon className="w-4 h-4" /></div>
+                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-blue-50 transition-colors cursor-pointer"><GlobeAltIcon className="w-4 h-4" /></div>
+                             </div>
                         </div>
                     </div>
                 </div>
