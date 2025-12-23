@@ -16,9 +16,9 @@ interface State {
 /**
  * ErrorBoundary class component to catch rendering errors in its child tree.
  */
-// Fix: Extend Component directly from the named import to ensure inherited properties are correctly typed and visible to the compiler.
+// Fix: Use direct Component import and class property initialization to resolve TypeScript inheritance errors (Property 'state', 'setState', 'props' not found).
 class ErrorBoundary extends Component<Props, State> {
-  // Initialize state directly as a property.
+  // Initialize state directly as a property to ensure TypeScript correctly identifies it as part of the component instance.
   public state: State = {
     hasError: false,
     error: null,
@@ -36,13 +36,12 @@ class ErrorBoundary extends Component<Props, State> {
 
   // Reset state to allow the UI to recover from the error state.
   private handleRetry = () => {
-    // Correctly using inherited setState.
-    // Fix: Accessing setState method from the Component base class.
+    // Fix: Direct Component inheritance ensures setState is correctly typed and accessible on 'this'.
     this.setState({ hasError: false, error: null });
   };
 
   public render() {
-    // Correctly accessing inherited state.
+    // Fix: Access state and props via direct inheritance from Component.
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-surface rounded-lg border border-white/10">
@@ -64,8 +63,7 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Correctly accessing inherited props.
-    // Fix: Accessing props from the Component base class.
+    // Return children from props when no error state is active.
     return this.props.children;
   }
 }
