@@ -52,6 +52,7 @@ export interface Transaction {
     date: string;
     status: TransactionStatus;
     type: 'Receita' | 'Despesa';
+    currency?: Currency; // Moeda da transação
     category: string; 
 }
 
@@ -95,6 +96,7 @@ export interface SaaSProduct {
   id: string;
   companyId: string;
   name: string;
+  currency: Currency; // Moeda do produto SaaS
   plans: SaaSPlan[];
 }
 

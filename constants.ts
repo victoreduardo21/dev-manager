@@ -36,7 +36,7 @@ export const PLANS = [
         description: 'Potência máxima para profissionais em ascensão.',
         limits: {
             users: 3,
-            leads: 999999,
+            leads: 250,
             hasLeadGen: false,
             hasAdvancedReports: true
         },

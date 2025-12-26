@@ -272,9 +272,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode, currentUser: Us
         const plan = PLANS.find(p => p.name === (myComp.plan || 'Starter'));
         if (!plan) return true;
 
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
         switch(feature) {
             case 'users': return users.length < plan.limits.users;
-            case 'leads': return leads.length < plan.limits.leads;
+            case 'leads': 
+                // Filtra apenas leads captados no mês atual para conferir o limite mensal
+                const leadsThisMonth = leads.filter(l => {
+                    const lDate = new Date(l.createdAt);
+                    return lDate.getMonth() === currentMonth && lDate.getFullYear() === currentYear;
+                });
+                return leadsThisMonth.length < plan.limits.leads;
             case 'leadGen': return plan.limits.hasLeadGen;
             default: return true;
         }

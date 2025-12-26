@@ -1,5 +1,5 @@
 
-import React, { Component, ErrorInfo, ReactNode } from "react";
+import React, { ErrorInfo, ReactNode } from "react";
 import { ExclamationTriangleIcon } from "./Icons";
 
 // Define Props interface for the ErrorBoundary.
@@ -16,13 +16,16 @@ interface State {
 /**
  * ErrorBoundary class component to catch rendering errors in its child tree.
  */
-// Fix: Use direct Component import and class property initialization to resolve TypeScript inheritance errors (Property 'state', 'setState', 'props' not found).
-class ErrorBoundary extends Component<Props, State> {
-  // Initialize state directly as a property to ensure TypeScript correctly identifies it as part of the component instance.
-  public state: State = {
-    hasError: false,
-    error: null,
-  };
+// Fix: Explicitly extending React.Component to ensure TypeScript resolves inherited members correctly.
+class ErrorBoundary extends React.Component<Props, State> {
+  // Fix: Initializing state in the constructor for better compatibility with type resolution.
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+    };
+  }
 
   // Standard React Error Boundary static method to update state when an error occurs.
   public static getDerivedStateFromError(error: Error): State {
@@ -36,12 +39,12 @@ class ErrorBoundary extends Component<Props, State> {
 
   // Reset state to allow the UI to recover from the error state.
   private handleRetry = () => {
-    // Fix: Direct Component inheritance ensures setState is correctly typed and accessible on 'this'.
+    // Fix: Accessing setState correctly from the React.Component base class.
     this.setState({ hasError: false, error: null });
   };
 
   public render() {
-    // Fix: Access state and props via direct inheritance from Component.
+    // Render error UI if an error was caught.
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-surface rounded-lg border border-white/10">
@@ -63,7 +66,7 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Return children from props when no error state is active.
+    // Fix: Accessing children from the props object inherited from the React.Component base class.
     return this.props.children;
   }
 }
