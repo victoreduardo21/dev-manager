@@ -17,7 +17,7 @@ interface ScrapedLead {
     contactType: 'whatsapp' | 'phone';
     selected: boolean;
     qualityScore: number;
-    potentialValue: number; // Valor estimado do contrato
+    potentialValue: number;
     messages: ChatMessage[];
 }
 
@@ -43,17 +43,32 @@ const LeadGen: React.FC = () => {
         return results.filter(r => r.selected).reduce((acc, curr) => acc + curr.potentialValue, 0);
     }, [results]);
 
-    const processContact = (phoneRaw: string): { phone: string, type: 'whatsapp' | 'phone' } | null => {
-        // Agora aceita formatos mundiais
+    // Lógica aprimorada para detectar se é WhatsApp (Celular) ou Fixo
+    const processContact = (phoneRaw: string, suggestedType?: string): { phone: string, type: 'whatsapp' | 'phone' } | null => {
         let clean = phoneRaw.replace(/[^\d+]/g, "");
         
-        // Lógica simplificada: Se tem mais de 10 dígitos, provavelmente é apto para WhatsApp internacional
-        if (clean.length >= 10) {
-            return { phone: clean, type: 'whatsapp' };
-        } else if (clean.length > 7) {
-            return { phone: clean, type: 'phone' };
+        // Se for número brasileiro (+55 ou sem prefixo mas com DDD)
+        const isBrazil = clean.startsWith("55") || (clean.length >= 10 && clean.length <= 11 && !clean.startsWith("+"));
+        let finalClean = clean;
+        if (isBrazil && !clean.startsWith("55")) finalClean = "55" + clean;
+
+        // Regra Brasil: DDD + 9 dígitos = Celular/WhatsApp. DDD + 8 dígitos = Fixo.
+        const numericOnly = finalClean.replace("55", "");
+        
+        if (isBrazil) {
+            if (numericOnly.length === 11 && numericOnly[2] === "9") {
+                return { phone: finalClean, type: 'whatsapp' };
+            } else if (numericOnly.length === 10) {
+                return { phone: finalClean, type: 'phone' };
+            }
         }
-        return null;
+
+        // Se for internacional, confiamos na sugestão da I.A. ou no comprimento
+        if (suggestedType === 'whatsapp' || clean.length >= 12) {
+            return { phone: clean, type: 'whatsapp' };
+        }
+        
+        return { phone: clean, type: 'phone' };
     };
 
     const formatMessage = (leadName: string) => {
@@ -67,18 +82,20 @@ const LeadGen: React.FC = () => {
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
             const response = await ai.models.generateContent({
                 model: 'gemini-3-pro-preview',
-                contents: `Act as a Global Market Intelligence & Business Evaluation Specialist.
-                          Extract DIRECT business contacts for "${nicho}" in "${local}". 
-                          FOCUS: ${segment} (World-wide search).
+                contents: `Aja como um Especialista em Inteligência de Mercado Global.
+                          Extraia contatos comerciais REAIS para "${nicho}" em "${local}". 
+                          FOCO: ${segment}.
                           
-                          VALUE FILTER (CRITICAL):
-                          1. Estimate the potential software/app project value for this company (potentialValue in BRL equivalent).
-                          2. Consider the business size: Small (R$ 5k-15k), Medium (R$ 20k-50k), Large (R$ 80k+).
-                          3. Assign realistic values based on global market complexity for ${nicho}.
+                          IDENTIFICAÇÃO DE TELEFONE (CRÍTICO):
+                          1. Diferencie Celular/WhatsApp de Telefone Fixo.
+                          2. No Brasil: 11 dígitos começando com 9 é 'whatsapp'. 10 dígitos é 'phone' (fixo).
                           
-                          Return JSON: { "leads": [{ "name": "...", "phone": "...", "address": "...", "score": 1-5, "potentialValue": number }] }.`,
+                          VALOR ESTIMADO:
+                          Atribua um 'potentialValue' (em Reais) baseado no tamanho da empresa: Pequena (5k-15k), Média (20k-50k), Grande (80k+).
+                          
+                          Retorne JSON: { "leads": [{ "name": "...", "phone": "...", "contactType": "whatsapp" | "phone", "address": "...", "score": 1-5, "potentialValue": number }] }.`,
                 config: {
-                    temperature: 0.2,
+                    temperature: 0.1,
                     thinkingConfig: { thinkingBudget: 16000 },
                     responseMimeType: "application/json",
                     responseSchema: {
@@ -91,11 +108,12 @@ const LeadGen: React.FC = () => {
                                     properties: {
                                         name: { type: Type.STRING },
                                         phone: { type: Type.STRING },
+                                        contactType: { type: Type.STRING },
                                         address: { type: Type.STRING },
                                         score: { type: Type.INTEGER },
                                         potentialValue: { type: Type.NUMBER }
                                     },
-                                    required: ["name", "phone", "potentialValue"]
+                                    required: ["name", "phone", "contactType", "potentialValue"]
                                 }
                             }
                         },
@@ -119,7 +137,6 @@ const LeadGen: React.FC = () => {
         if (plan === 'PRO') segments = ["Industry Leaders", "Enterprise Groups", "Expanding Businesses"];
         if (plan === 'VIP') segments = ["Global Players", "Large Manufacturers", "Logistics & Ports", "International Chains"];
 
-        // Define o limite máximo de resultados por busca baseado no plano
         const maxSearch = plan === 'VIP' ? 100 : (plan === 'PRO' ? 50 : 20);
         let foundCount = 0;
         const uniquePhones = new Set();
@@ -128,20 +145,20 @@ const LeadGen: React.FC = () => {
         try {
             for (let i = 0; i < segments.length; i++) {
                 if (foundCount >= maxSearch) break;
-                setStatusMessage(`Scanning worldwide potential in ${segments[i]}...`);
+                setStatusMessage(`Escaneando potencial em ${segments[i]}...`);
                 
                 const batch = await callGeminiHybridMining(keyword, location, segments[i]);
                 
                 for (const item of batch) {
                     if (foundCount >= maxSearch) break;
-                    const contact = processContact(item.phone);
+                    const contact = processContact(item.phone, item.contactType);
                     if (contact && !uniquePhones.has(contact.phone)) {
                         uniquePhones.add(contact.phone);
                         allResults.push({
                             id: `scraped-${Date.now()}-${foundCount}`,
                             name: item.name,
                             phone: contact.phone,
-                            contactType: contact.type,
+                            contactType: contact.type, // Aqui já vem classificado corretamente
                             address: item.address || location,
                             selected: true,
                             qualityScore: item.score || 3,
@@ -154,7 +171,7 @@ const LeadGen: React.FC = () => {
                 setResults([...allResults].sort((a, b) => b.potentialValue - a.potentialValue));
                 await new Promise(r => setTimeout(r, 200));
             }
-            setStatusMessage(`Global scan complete. ${foundCount} opportunities found.`);
+            setStatusMessage(`Varredura concluída. ${foundCount} oportunidades mapeadas.`);
         } catch (error) { setStatusMessage('Erro na mineração global.'); } finally { setIsSearching(false); }
     };
 
@@ -162,7 +179,6 @@ const LeadGen: React.FC = () => {
         const selectedLeads = results.filter(r => r.selected);
         if (selectedLeads.length === 0) return;
 
-        // VALIDAÇÃO DE LIMITE MENSAL
         if (!checkPlanLimits('leads')) {
             openModal('Limite de Plano Excedido', (
                 <div className="text-center p-6">
@@ -191,7 +207,7 @@ const LeadGen: React.FC = () => {
                     address: lead.address,
                     status: 'Novo',
                     source: `World Deep Miner`,
-                    notes: `Potencial: R$ ${lead.potentialValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}.`,
+                    notes: `Tipo: ${lead.contactType === 'whatsapp' ? 'WhatsApp' : 'Fixo'}. Potencial: R$ ${lead.potentialValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}.`,
                     messages: lead.contactType === 'whatsapp' ? [{
                         id: `auto-${Date.now()}`,
                         text: personalizedMsg,
@@ -219,7 +235,7 @@ const LeadGen: React.FC = () => {
                         <div className="bg-blue-600 h-full transition-all duration-300" style={{width: `${sendingProgress}%`}}></div>
                     </div>
                     <p className="text-white font-black text-3xl">{sendingProgress}%</p>
-                    <p className="text-[10px] text-white/50 font-black uppercase tracking-[0.3em] mt-2">Sincronizando Oportunidades Mundiais...</p>
+                    <p className="text-[10px] text-white/50 font-black uppercase tracking-[0.3em] mt-2">Classificando e Importando Leads...</p>
                 </div>
             )}
 
@@ -229,7 +245,7 @@ const LeadGen: React.FC = () => {
                         <BoltIcon className="w-10 h-10 text-blue-600" /> 
                         <span>Deep Miner 2.0 <span className="text-blue-400 text-sm">(GLOBAL)</span></span>
                     </h2>
-                    <p className="text-[11px] text-slate-400 font-black mt-1 uppercase tracking-[0.3em]">Scanner Mundial • {plan}</p>
+                    <p className="text-[11px] text-slate-400 font-black mt-1 uppercase tracking-[0.3em]">Scanner Mundial • Inteligência na Identificação de Fixo/Whats</p>
                 </div>
 
                 {results.length > 0 && (
@@ -239,7 +255,7 @@ const LeadGen: React.FC = () => {
                                 <CurrencyDollarIcon className="w-6 h-6" />
                             </div>
                             <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Oportunidade Mapeada</p>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Potencial de Vendas</p>
                                 <p className="text-xl font-black text-slate-900">R$ {totalPotentialValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                             </div>
                         </div>
@@ -257,15 +273,15 @@ const LeadGen: React.FC = () => {
                 <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
                     <div>
                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Nicho Estratégico</label>
-                        <input type="text" value={keyword} onChange={e => setKeyword(e.target.value)} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold outline-none focus:border-blue-600" placeholder="Ex: Logistics, Law Firms, Industries" />
+                        <input type="text" value={keyword} onChange={e => setKeyword(e.target.value)} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold outline-none focus:border-blue-600" placeholder="Ex: Escritórios, Indústrias, Clinicas" />
                     </div>
                     <div>
                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-1">Cidade / País / Região</label>
-                        <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold outline-none focus:border-blue-600" placeholder="New York, London, São Paulo..." />
+                        <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold outline-none focus:border-blue-600" placeholder="Cidade ou Região" />
                     </div>
                     <button type="submit" disabled={isSearching} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black uppercase text-[11px] tracking-widest hover:bg-blue-600 transition-all h-[58px] shadow-xl flex items-center justify-center gap-2">
                         {isSearching ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <MagnifyingGlassIcon className="w-5 h-5" />}
-                        {isSearching ? 'Mining Global...' : 'Pesquisar Mundialmente'}
+                        {isSearching ? 'Mining...' : 'Pesquisar'}
                     </button>
                 </form>
                 {statusMessage && <p className="mt-4 text-[10px] font-black text-blue-600 uppercase tracking-widest animate-pulse"> {statusMessage}</p>}
@@ -274,9 +290,20 @@ const LeadGen: React.FC = () => {
             {results.length > 0 && (
                 <div className="flex-1 flex flex-col bg-white rounded-[40px] border border-slate-200 overflow-hidden shadow-2xl">
                     <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                        <h3 className="font-black text-slate-900 text-[11px] uppercase tracking-[0.2em]">Contatos de Alto Valor ({results.length})</h3>
+                        <div className="flex items-center gap-6">
+                             <h3 className="font-black text-slate-900 text-[11px] uppercase tracking-[0.2em]">Oportunidades ({results.length})</h3>
+                             <div className="flex items-center gap-4">
+                                <span className="flex items-center gap-1.5 text-[9px] font-black text-green-600 uppercase bg-green-50 px-2 py-1 rounded-lg">
+                                    <WhatsAppIcon className="w-3 h-3" /> {results.filter(r => r.contactType === 'whatsapp').length} Whats
+                                </span>
+                                <span className="flex items-center gap-1.5 text-[9px] font-black text-blue-600 uppercase bg-blue-50 px-2 py-1 rounded-lg">
+                                    <PhoneIcon className="w-3 h-3" /> {results.filter(r => r.contactType === 'phone').length} Fixos
+                                </span>
+                             </div>
+                        </div>
                         <div className="flex gap-4">
-                            <button onClick={() => setResults(results.map(r => ({...r, selected: true})))} className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">Selecionar Todos</button>
+                            <button onClick={() => setResults(results.map(r => ({...r, selected: true})))} className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">Todos</button>
+                            <button onClick={() => setResults(results.map(r => ({...r, selected: r.contactType === 'whatsapp'})))} className="text-[10px] font-bold text-green-600 uppercase tracking-tighter">Só Whats</button>
                             <button onClick={() => setResults([])} className="text-[10px] font-bold text-red-500 uppercase tracking-tighter">Limpar</button>
                         </div>
                     </div>
@@ -300,12 +327,12 @@ const LeadGen: React.FC = () => {
 
                                 <div className="mt-4 pt-4 border-t border-slate-50 flex justify-between items-center">
                                     <div className="flex flex-col">
-                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Valor do Contrato</span>
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Potencial Contrato</span>
                                         <span className="text-sm font-black text-slate-900">R$ {lead.potentialValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
                                     </div>
                                     <span className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${lead.qualityScore >= 4 ? 'bg-blue-50 text-blue-600' : 'bg-slate-50 text-slate-500'}`}>
                                         {lead.qualityScore >= 4 ? <ShieldCheckIcon className="w-3.5 h-3.5" /> : null}
-                                        {lead.qualityScore >= 4 ? 'Certeiro' : 'Comercial'}
+                                        {lead.qualityScore >= 4 ? 'Elite' : 'Padrão'}
                                     </span>
                                 </div>
                             </div>
@@ -318,7 +345,7 @@ const LeadGen: React.FC = () => {
                 <div className="flex-1 flex flex-col items-center justify-center opacity-30 py-20 grayscale">
                     <CurrencyDollarIcon className="w-24 h-24 mb-8 text-slate-400" />
                     <p className="font-black uppercase tracking-[0.4em] text-[11px] text-slate-900 text-center leading-relaxed">
-                        Captação Mundial de Leads. <br/> Localize grandes players em qualquer mercado.
+                        Inteligência Artificial de Captação. <br/> Identificação automática de WhatsApp e Telefone Fixo.
                     </p>
                 </div>
             )}
@@ -329,23 +356,24 @@ const LeadGen: React.FC = () => {
                         <div className="flex items-center gap-4">
                             <div className="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center shadow-lg"><BoltIcon className="w-8 h-8" /></div>
                             <div>
-                                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Importar {results.filter(r => r.selected).length} Oportunidades</h3>
-                                <p className="text-sm text-slate-500">Valor Total Mapeado: R$ {totalPotentialValue.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+                                <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Importar Oportunidades</h3>
+                                <p className="text-sm text-slate-500">Mapeamos {results.filter(r => r.selected && r.contactType === 'whatsapp').length} contatos de WhatsApp para abordagem.</p>
                             </div>
                         </div>
 
                         <div>
-                            <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest block mb-2">Mensagem de Abordagem:</label>
+                            <label className="text-[10px] font-black text-blue-600 uppercase tracking-widest block mb-2">Mensagem (Apenas para Whats):</label>
                             <textarea 
                                 value={messageTemplate} 
                                 onChange={e => setMessageTemplate(e.target.value)}
                                 className="w-full h-40 bg-slate-50 border border-slate-200 rounded-3xl p-6 text-sm font-medium text-slate-600 outline-none focus:ring-2 focus:ring-blue-400 resize-none transition-all shadow-inner"
                             />
+                            <p className="text-[9px] text-slate-400 mt-2 italic">* Leads de Telefone Fixo serão importados sem mensagem automática.</p>
                         </div>
 
                         <div className="flex gap-4">
-                            <button onClick={() => setIsConfirmingImport(false)} className="flex-1 bg-slate-100 text-slate-500 py-4 rounded-2xl font-black uppercase text-xs tracking-widest">Revisar</button>
-                            <button onClick={confirmAndImport} className="flex-2 bg-blue-600 text-white px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest">Importar Tudo</button>
+                            <button onClick={() => setIsConfirmingImport(false)} className="flex-1 bg-slate-100 text-slate-500 py-4 rounded-2xl font-black uppercase text-xs tracking-widest">Voltar</button>
+                            <button onClick={confirmAndImport} className="flex-2 bg-blue-600 text-white px-10 py-4 rounded-2xl font-black uppercase text-xs tracking-widest">Finalizar Importação</button>
                         </div>
                     </div>
                 </div>

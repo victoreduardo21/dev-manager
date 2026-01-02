@@ -1,5 +1,5 @@
 
-import React, { ErrorInfo, ReactNode } from "react";
+import React, { Component, ErrorInfo, ReactNode } from "react";
 import { ExclamationTriangleIcon } from "./Icons";
 
 // Define Props interface for the ErrorBoundary.
@@ -16,11 +16,12 @@ interface State {
 /**
  * ErrorBoundary class component to catch rendering errors in its child tree.
  */
-// Fix: Explicitly extending React.Component to ensure TypeScript resolves inherited members correctly.
-class ErrorBoundary extends React.Component<Props, State> {
+// Fix: Use Component directly from react to improve type resolution for inherited members.
+class ErrorBoundary extends Component<Props, State> {
   // Fix: Initializing state in the constructor for better compatibility with type resolution.
   constructor(props: Props) {
     super(props);
+    // Fix: Accessing state inherited from Component.
     this.state = {
       hasError: false,
       error: null,
@@ -39,12 +40,12 @@ class ErrorBoundary extends React.Component<Props, State> {
 
   // Reset state to allow the UI to recover from the error state.
   private handleRetry = () => {
-    // Fix: Accessing setState correctly from the React.Component base class.
+    // Fix: Accessing setState correctly from the Component base class.
     this.setState({ hasError: false, error: null });
   };
 
   public render() {
-    // Render error UI if an error was caught.
+    // Fix: Accessing state inherited from Component.
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-surface rounded-lg border border-white/10">
@@ -54,6 +55,7 @@ class ErrorBoundary extends React.Component<Props, State> {
             Ocorreu um erro inesperado ao carregar este componente. Isso pode ser devido a uma configuração de API ausente ou erro de conexão.
           </p>
           <div className="bg-black/30 p-4 rounded-md text-left mb-6 w-full max-w-lg overflow-auto">
+             {/* Fix: Accessing state inherited from Component. */}
              <p className="text-red-400 font-mono text-xs">{this.state.error?.toString()}</p>
           </div>
           <button
@@ -66,7 +68,7 @@ class ErrorBoundary extends React.Component<Props, State> {
       );
     }
 
-    // Fix: Accessing children from the props object inherited from the React.Component base class.
+    // Fix: Accessing props inherited from Component.
     return this.props.children;
   }
 }
