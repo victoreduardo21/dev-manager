@@ -332,9 +332,9 @@ const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ selectedMonth, select
 export default function Financials() {
   const { projects, clients, updatePaymentStatus, saasProducts, transactions, addTransaction, updateTransaction, deleteTransaction, openModal } = useData();
   
-  // Estados de Filtro
-  const [selectedYear, setSelectedYear] = useState<number | 'all'>('all');
-  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
+  // Ajuste: Financeiro agora inicia puxando o Mês e Ano atuais
+  const [selectedYear, setSelectedYear] = useState<number | 'all'>(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number | 'all'>(new Date().getMonth());
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('BRL');
 
   const monthsList = [
@@ -402,7 +402,7 @@ export default function Financials() {
                 date: dateString,
                 amount: payment.amount,
                 status: payment.status,
-                currency: project.currency, // Pega a moeda do projeto
+                currency: project.currency,
                 paidDate: payment.paidDate,
                 category: project.category,
                 originalItem: { project: project, payment }
@@ -420,7 +420,7 @@ export default function Financials() {
               date: t.date,
               amount: t.amount,
               status: t.status,
-              currency: t.currency || 'BRL', // Pega a moeda da transação
+              currency: t.currency || 'BRL',
               category: t.category,
               originalItem: t
           });
@@ -430,14 +430,12 @@ export default function Financials() {
       const filteredPaymentsList: typeof unifiedPayments = [];
 
       unifiedPayments.forEach(item => {
-            // FILTRO DE MOEDA (PRIMÁRIO)
             if (item.currency !== selectedCurrency) return;
 
             const [yStr, mStr, dStr] = item.date.split('T')[0].split('-');
             const year = parseInt(yStr);
             const monthIdx = parseInt(mStr) - 1;
 
-            // Filtro de Ano
             const isYearMatch = selectedYear === 'all' || year === selectedYear;
 
             if (isYearMatch) {
@@ -447,7 +445,6 @@ export default function Financials() {
                 }
                 monthlyStats[monthIdx].projected += item.amount;
 
-                // Filtro de Mês
                 const isMonthMatch = selectedMonth === 'all' || monthIdx === selectedMonth;
 
                 if (isMonthMatch) {
@@ -462,7 +459,6 @@ export default function Financials() {
 
       filteredPaymentsList.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-      // MRR do SaaS filtrado por moeda
       const saasMRR = saasProducts
           .filter(s => s.currency === selectedCurrency)
           .reduce((acc, p) => {
@@ -485,7 +481,7 @@ export default function Financials() {
           totalMRR,
           filteredPaymentsList
       };
-  }, [projects, transactions, saasProducts, selectedYear, selectedMonth, selectedCurrency]);
+  }, [projects, transactions, saasProducts, selectedYear, selectedMonth, selectedCurrency, clients]);
 
   const symbol = CURRENCY_SYMBOLS[selectedCurrency];
   const formatMoney = (val: number) => `${symbol} ${val.toLocaleString('pt-BR', { 
@@ -502,7 +498,6 @@ export default function Financials() {
           </div>
           
           <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4 w-full md:w-auto">
-              {/* Currency Toggle Component */}
               <div className="bg-white p-1 rounded-full border border-slate-200 flex items-center shadow-sm shrink-0">
                   <button 
                     onClick={() => setSelectedCurrency('BRL')}
@@ -546,7 +541,7 @@ export default function Financials() {
           />
           <KPICard 
             title={selectedMonth !== 'all' ? `Faturado em ${monthsList.find(m => m.value === selectedMonth)?.label}` : 'Média Mensal'} 
-            value={selectedMonth !== 'all' ? formatMoney(financialData.filteredRevenue) : formatMoney(financialData.monthlyAverage)} 
+            value={formatMoney(financialData.filteredRevenue)} 
             icon={<CurrencyDollarIcon className="w-6 h-6"/>}
             colorClass="text-cyan-400"
             trend={selectedMonth !== 'all' ? "Receita neste mês" : "Baseado no período"}
