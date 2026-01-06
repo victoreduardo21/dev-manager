@@ -5,10 +5,6 @@ export type View = 'Dashboard' | 'CRM' | 'Captação' | 'Clientes' | 'Parceiros'
 
 export type Currency = 'BRL' | 'USD' | 'EUR';
 export type ProjectStatus = 'Pendente' | 'Em Andamento' | 'Concluído' | 'Atrasado';
-/**
- * Represents the category of a project. 
- * Added 'Outro' to align with the values used in ProjectManager.tsx.
- */
 export type ProjectCategory = 'Site' | 'Sistema' | 'App' | 'Marketing' | 'Consultoria' | 'Geral' | 'Outro';
 export type UserRole = 'SuperAdmin' | 'Admin' | 'User';
 export type SubscriptionStatus = 'Ativa' | 'Inativa';
@@ -52,7 +48,7 @@ export interface Transaction {
     date: string;
     status: TransactionStatus;
     type: 'Receita' | 'Despesa';
-    currency?: Currency; // Moeda da transação
+    currency?: Currency;
     category: string; 
 }
 
@@ -96,7 +92,7 @@ export interface SaaSProduct {
   id: string;
   companyId: string;
   name: string;
-  currency: Currency; // Moeda do produto SaaS
+  currency: Currency;
   plans: SaaSPlan[];
 }
 
@@ -168,7 +164,9 @@ export interface DataContextType {
     projects: Project[];
     saasProducts: SaaSProduct[];
     users: User[];
+    allUsers: User[]; // Nova
     companies: Company[];
+    allCompanies: Company[]; // Nova
     leads: Lead[];
     transactions: Transaction[]; 
     addClient: (client: Omit<Client, 'id' | 'companyId'>) => Promise<void>;

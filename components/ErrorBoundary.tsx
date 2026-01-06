@@ -1,3 +1,4 @@
+
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { ExclamationTriangleIcon } from "./Icons";
 
@@ -15,15 +16,16 @@ interface State {
 /**
  * ErrorBoundary class component to catch rendering errors in its child tree.
  */
-// Fix: Explicitly extending Component from 'react' with generic Props and State to resolve missing property errors for state, props, and setState.
+// Explicitly using Component from 'react' and providing generic types to ensure inheritance is correctly recognized by TypeScript.
 class ErrorBoundary extends Component<Props, State> {
-  // Initializing state in the constructor to avoid property shadowing and resolution issues.
+  // Fixed: Define state property explicitly with a property initializer to resolve 'Property state does not exist' errors.
+  public state: State = {
+    hasError: false,
+    error: null,
+  };
+
   constructor(props: Props) {
     super(props);
-    this.state = {
-      hasError: false,
-      error: null,
-    };
   }
 
   // Standard React Error Boundary static method to update state when an error occurs.
@@ -31,19 +33,19 @@ class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  // Log error details using ErrorInfo type for debugging purposes.
+  // Log error details for debugging purposes using ErrorInfo type.
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("Uncaught error:", error, errorInfo);
   }
 
   // Reset state to allow the UI to recover from the error state.
   private handleRetry = () => {
-    // Calling setState inherited from React.Component.
+    // Fixed: Accessing setState through Component inheritance.
     this.setState({ hasError: false, error: null });
   };
 
   public render() {
-    // Accessing state inherited from React.Component base class.
+    // Fixed: Accessing state inherited from React.Component.
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-surface rounded-lg border border-white/10">
@@ -53,7 +55,6 @@ class ErrorBoundary extends Component<Props, State> {
             Ocorreu um erro inesperado ao carregar este componente. Isso pode ser devido a uma configuração de API ausente ou erro de conexão.
           </p>
           <div className="bg-black/30 p-4 rounded-md text-left mb-6 w-full max-w-lg overflow-auto">
-             {/* Render error information stored in the state. */}
              <p className="text-red-400 font-mono text-xs">{this.state.error?.toString()}</p>
           </div>
           <button
@@ -66,7 +67,7 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Accessing props inherited from React.Component base class.
+    // Fixed: Accessing children through this.props inherited from Component.
     return this.props.children;
   }
 }

@@ -44,8 +44,8 @@ const LeadGen: React.FC = () => {
     }, [results]);
 
     // Lógica aprimorada para detectar se é WhatsApp (Celular) ou Fixo
-    const processContact = (phoneRaw: string, suggestedType?: string): { phone: string, type: 'whatsapp' | 'phone' } | null => {
-        let clean = phoneRaw.replace(/[^\d+]/g, "");
+    const processContact = (phoneRaw: any, suggestedType?: string): { phone: string, type: 'whatsapp' | 'phone' } | null => {
+        let clean = String(phoneRaw || '').replace(/[^\d+]/g, "");
         
         // Se for número brasileiro (+55 ou sem prefixo mas com DDD)
         const isBrazil = clean.startsWith("55") || (clean.length >= 10 && clean.length <= 11 && !clean.startsWith("+"));

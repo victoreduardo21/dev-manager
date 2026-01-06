@@ -279,7 +279,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode, currentUser: Us
         switch(feature) {
             case 'users': return users.length < plan.limits.users;
             case 'leads': 
-                // Filtra apenas leads captados no mês atual para conferir o limite mensal
                 const leadsThisMonth = leads.filter(l => {
                     const lDate = new Date(l.createdAt);
                     return lDate.getMonth() === currentMonth && lDate.getFullYear() === currentYear;
@@ -299,7 +298,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode, currentUser: Us
         projects,
         saasProducts,
         users,
+        allUsers: rawUsers, // Bruta
         companies,
+        allCompanies: rawCompanies, // Bruta
         leads,
         transactions,
         addClient, updateClient, deleteClient,

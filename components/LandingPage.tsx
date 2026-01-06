@@ -123,11 +123,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                     <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-100 rounded-full text-blue-600 text-[10px] font-black uppercase tracking-widest mb-10 shadow-sm animate-bounce-subtle">
                         <BoltIcon className="w-4 h-4" /> Nexus v3.0 • A Revolução na Gestão
                     </div>
-                    <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-8 leading-[0.9] text-slate-900 uppercase">
-                        Sua Agência <br /> em <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Piloto Automático.</span>
+                    <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-8 leading-[1] text-slate-900 uppercase max-w-5xl mx-auto">
+                        Gerencie sua Agência <br /> em <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">um só lugar.</span>
                     </h1>
-                    <p className="text-xl text-slate-500 max-w-2xl mx-auto mb-12 font-medium leading-relaxed">
-                        Abandone o caos das planilhas. Gerencie leads, projetos e WhatsApp em uma interface única e elegante.
+                    <p className="text-xl text-slate-500 max-w-3xl mx-auto mb-12 font-medium leading-relaxed">
+                        Controle total de projetos, finanças e equipe. Excelência e inovação para o seu negócio. Abandone o caos e escale com inteligência.
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                         <button onClick={() => scrollTo('pricing')} className="group bg-blue-600 text-white px-10 py-5 rounded-[24px] font-black text-xl shadow-2xl shadow-blue-500/40 hover:bg-blue-700 transition-all flex items-center gap-3 hover:scale-105 active:scale-95">
@@ -200,7 +200,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterApp }) => {
                         <h2 className="text-4xl md:text-6xl font-black tracking-tighter text-slate-900 mb-8 uppercase">Planos de Crescimento</h2>
                         <div className="inline-flex items-center gap-4 bg-slate-100 p-2 rounded-[24px] border border-slate-200">
                             <button onClick={() => setBillingCycle('monthly')} className={`px-8 py-3 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all ${billingCycle === 'monthly' ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-500'}`}>Mensal</button>
-                            <button onClick={() => setBillingCycle('yearly')} className={`px-8 py-3 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white shadow-xl' : 'text-slate-500'}`}>Anual <span className="bg-white/20 px-2 py-0.5 rounded text-[9px]">-17%</span></button>
+                            <button onClick={() => setBillingCycle('yearly')} className={`px-8 py-3 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1 ${billingCycle === 'yearly' ? 'bg-blue-600 text-white shadow-xl' : 'text-slate-500'}`}>Anual <span className={`${billingCycle === 'yearly' ? 'bg-white/20' : 'bg-green-100 text-green-600'} px-2 py-0.5 rounded text-[9px]`}>-17%</span></button>
                         </div>
                     </div>
 

@@ -49,7 +49,7 @@ const Login: React.FC<LoginProps> = ({
       : 0;
 
   const handleNumericInput = (value: string, setter: (v: string) => void, limit: number) => {
-      const onlyNums = value.replace(/\D/g, '');
+      const onlyNums = String(value).replace(/\D/g, '');
       setter(onlyNums.slice(0, limit));
   };
 
@@ -123,7 +123,7 @@ const Login: React.FC<LoginProps> = ({
     }
   };
 
-  const inputClasses = "block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all shadow-sm font-semibold text-xs";
+  const inputClasses = "block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 outline-none transition-all shadow-sm font-semibold text-[11px]";
 
   return (
     <div className="flex min-h-screen bg-slate-50 relative overflow-hidden font-sans">
@@ -140,7 +140,7 @@ const Login: React.FC<LoginProps> = ({
                 <span className="text-2xl font-black tracking-tighter text-white uppercase">NEXUS<span className="text-blue-500">MANAGER</span></span>
             </div>
             
-            <h1 className="text-6xl font-black text-white leading-[1.1] mb-8 tracking-tighter">
+            <h1 className="text-6xl font-black text-white leading-[1.1] mb-8 tracking-tighter uppercase">
                 Gerencie sua <br /> Agência em <br /> <span className="text-blue-500 text-7xl">um só lugar</span>
             </h1>
             
@@ -151,71 +151,71 @@ const Login: React.FC<LoginProps> = ({
       </div>
 
       {/* Form Section - White Card */}
-      <div className="w-full lg:w-[55%] flex items-center justify-center p-6 bg-slate-50 overflow-y-auto">
-        <div className="w-full max-w-lg space-y-6 bg-white p-8 sm:p-12 rounded-[40px] shadow-2xl shadow-slate-200 border border-white">
-            <div className="text-center space-y-1">
-                <h2 className="text-3xl font-black tracking-tighter text-slate-900 uppercase">
-                    {isLoginView ? 'Acessar Painel' : 'Criar sua Conta'}
+      <div className="w-full lg:w-[55%] flex items-center justify-center p-4 bg-slate-50 overflow-y-auto">
+        <div className="w-full max-w-lg space-y-4 bg-white p-6 sm:p-10 rounded-[40px] shadow-2xl shadow-slate-200 border border-white">
+            <div className="text-center space-y-0.5">
+                <h2 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">
+                    {isLoginView ? 'Acessar Painel' : 'Nova Conta'}
                 </h2>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
-                    {isLoginView ? 'Seja bem-vindo de volta' : 'Preencha os dados abaixo'}
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                    {isLoginView ? 'Seja bem-vindo de volta' : 'Inicie sua jornada agora'}
                 </p>
             </div>
 
             {isLoginView ? (
-                <form className="space-y-4" onSubmit={handleLoginSubmit}>
-                    {success && <div className="p-4 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-2xl text-[10px] font-bold text-center">{success}</div>}
-                    {error && <div className="p-4 bg-rose-50 border border-rose-100 text-rose-700 rounded-2xl text-[10px] font-bold text-center">{error}</div>}
+                <form className="space-y-3" onSubmit={handleLoginSubmit}>
+                    {success && <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-2xl text-[10px] font-bold text-center">{success}</div>}
+                    {error && <div className="p-3 bg-rose-50 border border-rose-100 text-rose-700 rounded-2xl text-[10px] font-bold text-center">{error}</div>}
                     
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                         <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={inputClasses} placeholder="Email de acesso" />
                         <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className={inputClasses} placeholder="Sua senha" />
                     </div>
 
-                    <button type="submit" disabled={isLoading} className="w-full rounded-2xl bg-blue-600 px-6 py-4 text-xs font-black text-white uppercase tracking-widest hover:bg-blue-700 hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-blue-500/20">
+                    <button type="submit" disabled={isLoading} className="w-full rounded-2xl bg-blue-600 px-6 py-3.5 text-xs font-black text-white uppercase tracking-widest hover:bg-blue-700 hover:scale-[1.01] active:scale-95 transition-all shadow-xl shadow-blue-500/20">
                         {isLoading ? 'Entrando...' : 'Entrar no Nexus'}
                     </button>
                     
-                    <div className="text-center pt-2">
-                        <button type="button" onClick={() => setIsLoginView(false)} className="text-[10px] font-black text-blue-600 hover:underline uppercase tracking-widest">
+                    <div className="text-center pt-1">
+                        <button type="button" onClick={() => setIsLoginView(false)} className="text-[9px] font-black text-blue-600 hover:underline uppercase tracking-widest">
                             Ainda não tem conta? Cadastre-se
                         </button>
                     </div>
                 </form>
             ) : (
-                <form className="space-y-3" onSubmit={handleRegisterSubmit}>
+                <form className="space-y-2.5" onSubmit={handleRegisterSubmit}>
                     {/* Compact Header for Register */}
-                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex justify-between items-center mb-2">
+                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 flex justify-between items-center">
                         <div>
-                            <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-0.5">Assinatura</p>
-                            <h4 className="text-lg font-black text-slate-900">{selectedPlan}</h4>
+                            <p className="text-[8px] font-black text-blue-600 uppercase tracking-widest mb-0.5">Assinatura Ativa</p>
+                            <h4 className="text-base font-black text-slate-900">{selectedPlan}</h4>
                         </div>
                         <div className="text-right">
-                            <p className="text-lg font-black text-slate-900">R$ {planPrice.toLocaleString('pt-BR')}</p>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase">/{billingCycle === 'yearly' ? 'anual' : 'mensal'}</p>
+                            <p className="text-base font-black text-slate-900">R$ {planPrice.toLocaleString('pt-BR')}</p>
+                            <p className="text-[8px] font-bold text-slate-400 uppercase">/{billingCycle === 'yearly' ? 'anual' : 'mensal'}</p>
                         </div>
                     </div>
 
-                    {error && <div className="p-3 bg-rose-50 border border-rose-100 text-rose-700 rounded-xl text-[10px] font-bold text-center">{error}</div>}
+                    {error && <div className="p-2.5 bg-rose-50 border border-rose-100 text-rose-700 rounded-xl text-[10px] font-bold text-center">{error}</div>}
 
-                    <div className="grid grid-cols-1 gap-3">
-                        <input type="text" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={inputClasses} placeholder="Nome da Empresa" />
+                    <div className="space-y-2">
+                        <input type="text" required value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={inputClasses} placeholder="Nome da sua Empresa" />
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-2">
                             <input type="text" required value={firstName} onChange={(e) => setFirstName(e.target.value)} className={inputClasses} placeholder="Nome" />
                             <input type="text" required value={lastName} onChange={(e) => setLastName(e.target.value)} className={inputClasses} placeholder="Sobrenome" />
                         </div>
                         
                         <input type="email" required value={regEmail} onChange={(e) => setRegEmail(e.target.value)} className={inputClasses} placeholder="Email Corporativo" />
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-2">
                             <input
                                 type="tel"
                                 required
                                 value={regPhone}
                                 onChange={(e) => handleNumericInput(e.target.value, setRegPhone, 11)}
                                 className={inputClasses}
-                                placeholder="WhatsApp (11 dig)"
+                                placeholder="Tel (11 dígitos)"
                                 maxLength={11}
                             />
                             <input
@@ -224,39 +224,49 @@ const Login: React.FC<LoginProps> = ({
                                 value={regCpf}
                                 onChange={(e) => handleNumericInput(e.target.value, setRegCpf, 11)}
                                 className={inputClasses}
-                                placeholder="CPF (11 dig)"
+                                placeholder="CPF (11 dígitos)"
                                 maxLength={11}
                             />
                         </div>
 
-                        {/* Password Logic Compact */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <input type="password" required value={regPassword} onChange={(e) => setRegPassword(e.target.value)} className={inputClasses} placeholder="Senha (9 dig)" maxLength={9} />
-                            <input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClasses} placeholder="Confirmar" maxLength={9} />
+                        {/* Complexity indicators card */}
+                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 space-y-2">
+                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Segurança exata da senha:</p>
+                             <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                                <span className={`text-[8px] font-black flex items-center gap-1.5 uppercase ${regPassword.length === 9 ? 'text-emerald-600' : 'text-slate-300'}`}>
+                                    <div className={`w-1 h-1 rounded-full ${regPassword.length === 9 ? 'bg-emerald-600' : 'bg-slate-300'}`}></div> 9 Caracteres
+                                </span>
+                                <span className={`text-[8px] font-black flex items-center gap-1.5 uppercase ${(regPassword.match(/\d/g) || []).length === 6 ? 'text-emerald-600' : 'text-slate-300'}`}>
+                                    <div className={`w-1 h-1 rounded-full ${(regPassword.match(/\d/g) || []).length === 6 ? 'bg-emerald-600' : 'bg-slate-300'}`}></div> Exato 6 Números
+                                </span>
+                                <span className={`text-[8px] font-black flex items-center gap-1.5 uppercase ${/[A-Z]/.test(regPassword) ? 'text-emerald-600' : 'text-slate-300'}`}>
+                                    <div className={`w-1 h-1 rounded-full ${/[A-Z]/.test(regPassword) ? 'bg-emerald-600' : 'bg-slate-300'}`}></div> 1 Maiúscula
+                                </span>
+                                <span className={`text-[8px] font-black flex items-center gap-1.5 uppercase ${/[!@#$%^&*]/.test(regPassword) ? 'text-emerald-600' : 'text-slate-300'}`}>
+                                    <div className={`w-1 h-1 rounded-full ${/[!@#$%^&*]/.test(regPassword) ? 'bg-emerald-600' : 'bg-slate-300'}`}></div> 1 Especial
+                                </span>
+                             </div>
                         </div>
-                        
-                        {/* Requirement indicators */}
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 px-1">
-                            <span className={`text-[9px] font-bold flex items-center gap-1 ${regPassword.length === 9 ? 'text-emerald-600' : 'text-slate-300'}`}>● Exato 9 dig</span>
-                            <span className={`text-[9px] font-bold flex items-center gap-1 ${(regPassword.match(/\d/g) || []).length === 6 ? 'text-emerald-600' : 'text-slate-300'}`}>● 6 Números</span>
-                            <span className={`text-[9px] font-bold flex items-center gap-1 ${/[A-Z]/.test(regPassword) ? 'text-emerald-600' : 'text-slate-300'}`}>● 1 Maiúscula</span>
-                            <span className={`text-[9px] font-bold flex items-center gap-1 ${/[!@#$%^&*]/.test(regPassword) ? 'text-emerald-600' : 'text-slate-300'}`}>● 1 Especial</span>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <input type="password" required value={regPassword} onChange={(e) => setRegPassword(e.target.value)} className={inputClasses} placeholder="Senha (9 dígitos)" maxLength={9} />
+                            <input type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClasses} placeholder="Confirmar Senha" maxLength={9} />
                         </div>
                     </div>
 
-                    <button type="submit" disabled={isLoading} className="w-full rounded-2xl bg-blue-600 px-6 py-4 text-xs font-black text-white uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-500/20 active:scale-95 transition-all mt-4">
-                        {isLoading ? 'Criando Conta...' : 'Finalizar e Acessar'}
+                    <button type="submit" disabled={isLoading} className="w-full rounded-2xl bg-blue-600 px-6 py-3.5 text-xs font-black text-white uppercase tracking-widest hover:bg-blue-700 shadow-xl shadow-blue-500/20 active:scale-95 transition-all mt-2">
+                        {isLoading ? 'Criando Conta...' : 'Finalizar Cadastro'}
                     </button>
 
                     <div className="text-center">
-                        <button type="button" onClick={() => setIsLoginView(true)} className="text-[10px] font-black text-blue-600 hover:underline uppercase tracking-widest">
-                            Já tem conta? Fazer Login
+                        <button type="button" onClick={() => setIsLoginView(true)} className="text-[9px] font-black text-blue-600 hover:underline uppercase tracking-widest">
+                            Já possui uma conta? Logar
                         </button>
                     </div>
                 </form>
             )}
             
-            <button onClick={onBack} className="w-full text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">
+            <button onClick={onBack} className="w-full text-[8px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">
                 Voltar para página inicial
             </button>
         </div>
