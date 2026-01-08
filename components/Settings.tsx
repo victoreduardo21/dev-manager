@@ -21,7 +21,7 @@ const Settings: React.FC = () => {
         name: '',
         email: '',
         phone: '',
-        cpf: ''
+        cnpj: ''
     });
 
     const [isSaving, setIsSaving] = useState(false);
@@ -33,7 +33,7 @@ const Settings: React.FC = () => {
                 name: currentUser.name || '',
                 email: currentUser.email || '',
                 phone: currentUser.phone || '',
-                cpf: currentUser.cpf || ''
+                cnpj: currentUser.cnpj || ''
             });
         }
     }, [currentUser]);
@@ -54,7 +54,7 @@ const Settings: React.FC = () => {
                 name: formData.name,
                 email: formData.email,
                 phone: formData.phone,
-                cpf: formData.cpf
+                cnpj: formData.cnpj
             });
             setSuccessMsg('Dados atualizados com sucesso!');
         } catch (error) {
@@ -186,6 +186,10 @@ const Settings: React.FC = () => {
                     <div className="space-y-1">
                         <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">WhatsApp</label>
                         <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:border-blue-500 outline-none" />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">CNPJ</label>
+                        <input type="text" name="cnpj" value={formData.cnpj} onChange={handleInputChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:border-blue-500 outline-none" />
                     </div>
                     <button onClick={handleSaveUserProfile} disabled={isSaving} className="w-full bg-blue-600 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 active:scale-95 disabled:opacity-50 mt-4">
                         {isSaving ? 'Salvando...' : 'Salvar Alterações'}

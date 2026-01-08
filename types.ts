@@ -104,7 +104,7 @@ export interface User {
     password?: string; 
     role: UserRole;
     phone?: string;
-    cpf?: string;
+    cnpj?: string;
 }
 
 export interface SubscriptionPayment {

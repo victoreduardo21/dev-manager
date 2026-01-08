@@ -68,7 +68,7 @@ export const api = {
             email: userData.email,
             password: userData.password,
             phone: userData.phone,
-            cpf: userData.cpf,
+            cnpj: userData.cnpj, // Alterado de cpf para cnpj para bater com a nova lógica
             plan: userData.plan, // Envia o plano selecionado
             billingCycle: userData.billingCycle, // Envia o ciclo de pagamento (monthly/yearly)
             role: 'User'

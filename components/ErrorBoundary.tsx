@@ -16,9 +16,9 @@ interface State {
 /**
  * ErrorBoundary class component to catch rendering errors in its child tree.
  */
-// Explicitly using Component from 'react' and providing generic types to ensure inheritance is correctly recognized by TypeScript.
+// Fix: Extending Component directly from 'react' to resolve property access issues.
 class ErrorBoundary extends Component<Props, State> {
-  // Fixed: Define state property explicitly with a property initializer to resolve 'Property state does not exist' errors.
+  // Explicitly initialize state property.
   public state: State = {
     hasError: false,
     error: null,
@@ -40,12 +40,12 @@ class ErrorBoundary extends Component<Props, State> {
 
   // Reset state to allow the UI to recover from the error state.
   private handleRetry = () => {
-    // Fixed: Accessing setState through Component inheritance.
+    // Fix: Using this.setState which is inherited from Component.
     this.setState({ hasError: false, error: null });
   };
 
   public render() {
-    // Fixed: Accessing state inherited from React.Component.
+    // Use the error state to determine if fallback UI should be shown.
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-surface rounded-lg border border-white/10">
@@ -67,7 +67,7 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Fixed: Accessing children through this.props inherited from Component.
+    // Fix: Access children via this.props inherited from Component.
     return this.props.children;
   }
 }

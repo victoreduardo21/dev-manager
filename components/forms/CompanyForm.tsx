@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import type { Company, Currency, SubscriptionStatus } from '../../types';
 import { CURRENCIES } from '../../constants';
@@ -77,7 +78,7 @@ export const CompanyForm: React.FC<{
             
             <h4 className="text-lg font-semibold text-text-primary border-b border-white/10 pb-2">Dados da Empresa</h4>
             <input type="text" name="name" placeholder="Nome da Empresa" value={companyData.name} onChange={handleCompanyChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary" />
-            <input type="text" name="cnpj_cpf" placeholder="CNPJ ou CPF" value={companyData.cnpj_cpf} onChange={handleCompanyChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary" />
+            <input type="text" name="cnpj_cpf" placeholder="CNPJ" value={companyData.cnpj_cpf} onChange={handleCompanyChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md focus:outline-none focus:ring-primary focus:border-primary" />
             
             <div className="grid grid-cols-2 gap-4">
                 <input type="number" name="subscriptionValue" placeholder="Valor da Assinatura" value={companyData.subscriptionValue} onChange={handleCompanyChange} className="w-full px-3 py-2 bg-background/50 border border-white/20 rounded-md" />

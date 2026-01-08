@@ -35,7 +35,7 @@ const Login: React.FC<LoginProps> = ({
   const [lastName, setLastName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
-  const [regCpf, setRegCpf] = useState('');
+  const [regCnpj, setRegCnpj] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -91,8 +91,8 @@ const Login: React.FC<LoginProps> = ({
     e.preventDefault();
     setError('');
     
-    if (regCpf.length !== 11) {
-        setError('CPF deve ter exatamente 11 números.');
+    if (regCnpj.length !== 14) {
+        setError('CNPJ deve ter exatamente 14 números.');
         return;
     }
 
@@ -111,7 +111,7 @@ const Login: React.FC<LoginProps> = ({
     try {
         await onRegister({
             companyName, firstName, lastName,
-            email: regEmail, phone: regPhone, cpf: regCpf,
+            email: regEmail, phone: regPhone, cnpj: regCnpj,
             password: regPassword,
         });
         setSuccess('Cadastro concluído!');
@@ -221,11 +221,11 @@ const Login: React.FC<LoginProps> = ({
                             <input
                                 type="text"
                                 required
-                                value={regCpf}
-                                onChange={(e) => handleNumericInput(e.target.value, setRegCpf, 11)}
+                                value={regCnpj}
+                                onChange={(e) => handleNumericInput(e.target.value, setRegCnpj, 14)}
                                 className={inputClasses}
-                                placeholder="CPF (11 dígitos)"
-                                maxLength={11}
+                                placeholder="CNPJ (14 dígitos)"
+                                maxLength={14}
                             />
                         </div>
 
